@@ -15,11 +15,16 @@ pub struct DataDogLogger {
 /// Configuration for DataDogLogger
 #[derive(Debug, Clone)]
 pub struct DataDogConfig {
-    tags : Option<String>,
-    apikey : String,
-    service : String,
-    hostname : String,
-    source : String
+    /// Tags to add to each log
+    pub tags : Option<String>,
+    /// DataDog API key
+    pub apikey : String,
+    /// Service name to add to each log
+    pub service : String,
+    /// Hostname to add to each log
+    pub hostname : String,
+    /// Source to add to each log
+    pub source : String
 }
 
 impl Default for DataDogConfig {
