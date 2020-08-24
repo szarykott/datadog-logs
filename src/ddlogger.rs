@@ -26,8 +26,10 @@ pub struct DataDogConfig {
     /// Source to add to each log
     pub source : String,
     /// Url of DataDog service along with scheme and path
-    /// Defaults to https://http-intake.logs.datadoghq.com/v1/input
-    /// For other geographies you might want to use https://http-intake.logs.datadoghq.eu/v1/input for example
+    ///
+    /// Defaults to `https://http-intake.logs.datadoghq.com/v1/input`
+    ///
+    /// For other geographies you might want to use `https://http-intake.logs.datadoghq.eu/v1/input` for example
     pub datadog_url : String
 }
 
