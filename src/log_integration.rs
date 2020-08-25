@@ -1,4 +1,4 @@
-use crate::ddlogger::{DataDogConfig, DataDogLogLevel, DataDogLogger};
+use crate::logger::{DataDogConfig, DataDogLogLevel, DataDogLogger};
 use log::{LevelFilter, Log, Metadata, Record};
 
 impl Log for DataDogLogger {
@@ -27,7 +27,7 @@ impl Log for DataDogLogger {
 }
 
 impl DataDogLogger {
-    /// Initiates DataDogLogger with log crate
+    /// Initiates DataDogLogger with `log` crate
     pub fn init_with_log(
         config: DataDogConfig,
         level: LevelFilter,

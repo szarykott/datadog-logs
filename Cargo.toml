@@ -1,12 +1,24 @@
 [package]
 name = "datadog-logs"
 version = "0.1.0"
-authors = ["rdkt13 <rdkt13@gmail.com>"]
+authors = ["Radosław Kot <rdkt13@gmail.com>"]
+license = "MIT"
+description = "Simple client library for DataDog logs"
+repository = "https://github.com/szarykott/datadog-logs"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+# default set of dependencies
+default = []
+# provides integration with log crate
+log-integration = ["log"]
+# enables logging of errors within logger to console
+self-log = []
+
 [dependencies]
-miniserde = { version = "0.1.13" }
-attohttpc = { version = "0.15.0", features = ["tls", "compress"] }
-log = { version = "0.4.11", features = ["std"] }
+miniserde = { version = "0.1" }
+attohttpc = { version = "0.15", features = ["tls", "compress"] }
+url = { version = "2.1" }
+log = { version = "0.4", features = ["std"], optional = true }
