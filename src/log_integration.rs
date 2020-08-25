@@ -16,9 +16,7 @@ impl Log for DataDogLogger {
 
         &self.log(
             format!(
-                "{}:{} -- {}",
-                record.level(),
-                record.target(),
+                "{}",
                 record.args()
             ),
             level,
