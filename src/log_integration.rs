@@ -1,5 +1,5 @@
-use log::{Log, Record, Metadata, LevelFilter};
-use crate::ddlogger::{DataDogLogger, DataDogConfig, DataDogLogLevel};
+use crate::ddlogger::{DataDogConfig, DataDogLogLevel, DataDogLogger};
+use log::{LevelFilter, Log, Metadata, Record};
 
 impl Log for DataDogLogger {
     fn enabled(&self, _metadata: &Metadata) -> bool {
@@ -10,20 +10,31 @@ impl Log for DataDogLogger {
             log::Level::Error => DataDogLogLevel::Error,
             log::Level::Warn => DataDogLogLevel::Warning,
             log::Level::Info => DataDogLogLevel::Informational,
-            log::Level::Debug | log::Level::Trace  => DataDogLogLevel::Debug,
+            log::Level::Debug | log::Level::Trace => DataDogLogLevel::Debug,
         };
 
-        &self.log(format!("{}:{} -- {}", record.level(), record.target(), record.args()), level);
+        &self.log(
+            format!(
+                "{}:{} -- {}",
+                record.level(),
+                record.target(),
+                record.args()
+            ),
+            level,
+        );
     }
-    fn flush(&self) { }
+    fn flush(&self) {}
 }
 
 impl DataDogLogger {
     /// Initiates DataDogLogger with log crate
-    pub fn init_with_log(config : DataDogConfig, level : LevelFilter) -> Result<(), log::SetLoggerError>{
+    pub fn init_with_log(
+        config: DataDogConfig,
+        level: LevelFilter,
+    ) -> Result<(), log::SetLoggerError> {
         let logger = DataDogLogger::new(config);
         log::set_boxed_logger(Box::new(logger))?;
         log::set_max_level(level);
         Ok(())
-    }    
+    }
 }
