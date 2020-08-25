@@ -1,6 +1,7 @@
 use crate::logger::{DataDogConfig, DataDogLogLevel, DataDogLogger};
 use log::{LevelFilter, Log, Metadata, Record};
 
+/// Requires `log` feature enabled
 impl Log for DataDogLogger {
     fn enabled(&self, _metadata: &Metadata) -> bool {
         true
@@ -28,6 +29,8 @@ impl Log for DataDogLogger {
 
 impl DataDogLogger {
     /// Initiates DataDogLogger with `log` crate
+    ///
+    /// Requires `log` feature enabled
     pub fn init_with_log(
         config: DataDogConfig,
         level: LevelFilter,
