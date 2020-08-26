@@ -8,7 +8,8 @@
 //!
 //! `self-log` - enables console logging of events inside DataDogLogger itself
 #![deny(missing_docs)]
-#[deny(unsafe_code)]
+#![deny(unsafe_code)]
+#![deny(clippy::all)]
 
 /// Contains DataDog logger implementation
 pub mod logger;

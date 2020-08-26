@@ -26,7 +26,7 @@ impl Log for DataDogLogger {
 }
 
 impl DataDogLogger {
-    /// Initiates DataDogLogger with `log` crate
+    /// Initializes DataDogLogger with `log` crate
     ///
     /// Requires `log` feature enabled
     pub fn init_with_log(

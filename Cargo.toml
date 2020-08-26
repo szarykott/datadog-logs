@@ -11,7 +11,7 @@ edition = "2018"
 
 [features]
 # default set of dependencies
-default = []
+default = ["log-integration"]
 # provides integration with log crate
 log-integration = ["log"]
 # enables logging of errors within logger to console
