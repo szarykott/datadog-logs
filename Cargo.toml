@@ -6,7 +6,7 @@ license = "MIT"
 description = "Simple client library for DataDog logs"
 repository = "https://github.com/szarykott/datadog-logs"
 edition = "2018"
-readme = "README.me"
+readme = "README.md"
 keywords = ["logging", "datadog"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
