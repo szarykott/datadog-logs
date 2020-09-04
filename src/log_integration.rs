@@ -1,4 +1,4 @@
-use crate::logger::{DataDogConfig, DataDogLogLevel, DataDogLogger};
+use crate::logger::{DataDogConfig, DataDogLogLevel, DataDogLogger, DataDogLoggerError};
 use log::{LevelFilter, Log, Metadata, Record};
 
 /// Requires `log` feature enabled
@@ -14,13 +14,7 @@ impl Log for DataDogLogger {
             log::Level::Debug | log::Level::Trace => DataDogLogLevel::Debug,
         };
 
-        &self.log(
-            format!(
-                "{}",
-                record.args()
-            ),
-            level,
-        );
+        &self.log(format!("{}", record.args()), level);
     }
     fn flush(&self) {}
 }
@@ -32,8 +26,8 @@ impl DataDogLogger {
     pub fn init_with_log(
         config: DataDogConfig,
         level: LevelFilter,
-    ) -> Result<(), log::SetLoggerError> {
-        let logger = DataDogLogger::new(config);
+    ) -> Result<(), DataDogLoggerError> {
+        let logger = DataDogLogger::new(config)?;
         log::set_boxed_logger(Box::new(logger))?;
         log::set_max_level(level);
         Ok(())

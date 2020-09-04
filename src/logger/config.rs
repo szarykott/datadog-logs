@@ -1,17 +1,17 @@
 use std::default::Default;
-use url::Url;
+use serde::{Serialize, Deserialize};
 
 /// Configuration for DataDogLogger
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DataDogConfig {
     /// Tags to add to each log
     pub tags: Option<String>,
     /// DataDog API key
     pub apikey: String,
     /// Service name to add to each log
-    pub service: String,
+    pub service: Option<String>,
     /// Hostname to add to each log
-    pub hostname: String,
+    pub hostname: Option<String>,
     /// Source to add to each log
     pub source: String,
     /// Url of DataDog service along with scheme and path
@@ -19,7 +19,7 @@ pub struct DataDogConfig {
     /// Defaults to `https://http-intake.logs.datadoghq.com/v1/input`
     ///
     /// For other geographies you might want to use `https://http-intake.logs.datadoghq.eu/v1/input` for example
-    pub datadog_url: Url,
+    pub datadog_url: String,
 }
 
 impl Default for DataDogConfig {
@@ -27,10 +27,10 @@ impl Default for DataDogConfig {
         DataDogConfig {
             tags: None,
             apikey: "".into(),
-            service: "unknown".into(),
-            hostname: "unknown".into(),
+            service: None,
+            hostname: None,
             source: "rust".into(),
-            datadog_url: Url::parse("https://http-intake.logs.datadoghq.com/v1/input").unwrap(),
+            datadog_url: "https://http-intake.logs.datadoghq.com/v1/input".into(),
         }
     }
 }

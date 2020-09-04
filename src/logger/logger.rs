@@ -1,19 +1,21 @@
-use miniserde::{json, Serialize};
+use attohttpc::StatusCode;
+use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::ops::Drop;
 use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
 use std::thread;
-use attohttpc::StatusCode;
+use url::Url;
 
-use super::level::DataDogLogLevel;
 use super::config::DataDogConfig;
+use super::level::DataDogLogLevel;
+use super::error::DataDogLoggerError;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct DataDogLog {
     message: String,
     ddtags: Option<String>,
     ddsource: String,
-    ddhostname: String,
+    host: String,
     service: String,
     level: String,
 }
@@ -27,10 +29,10 @@ pub struct DataDogLogger {
 
 impl DataDogLogger {
     /// Creates new DataDogLogger instance
-    pub fn new(config: DataDogConfig) -> Self {
+    pub fn new(config: DataDogConfig) -> Result<Self, DataDogLoggerError> {
         let (sender, receiver) = sync_channel::<DataDogLog>(256);
         let api_key = config.apikey.clone();
-        let url = config.datadog_url.clone();
+        let url = Url::parse(&config.datadog_url)?;
 
         let logger_handle = thread::spawn(move || {
             let mut messages: Vec<DataDogLog> = Vec::new();
@@ -60,31 +62,40 @@ impl DataDogLogger {
             }
         });
 
-        DataDogLogger {
+        Ok(DataDogLogger {
             config,
             sender: Some(sender),
             logger_handle: Some(logger_handle),
-        }
+        })
     }
 
     fn send_messages_to_dd(msgs: &Vec<DataDogLog>, api_key: &str, url: &str) {
-        let message_formatted = json::to_string(&msgs);
-        let result = attohttpc::post(url)
-            .header_append("Content-Type", "application/json")
-            .header_append("DD-API-KEY", api_key)
-            .text(message_formatted)
-            .send();
+        if let Ok(message_formatted) = serde_json::to_string(&msgs) {
+            let result = attohttpc::post(url)
+                .header_append("Content-Type", "application/json")
+                .header_append("DD-API-KEY", api_key)
+                .text(message_formatted)
+                .send();
 
-        if cfg!(feature = "self-log") {
-            match result {
-                Ok(res) => match res.status() {
-                    StatusCode::OK => println!("Received OK response from DataDog"),
-                    code => eprintln!("Received {} status code from Datadog. Body : {}", code, res.text().unwrap_or_default())
+            if cfg!(feature = "self-log") {
+                match result {
+                    Ok(res) => match res.status() {
+                        StatusCode::OK => println!("Received OK response from DataDog"),
+                        code => eprintln!(
+                            "Received {} status code from Datadog. Body : {}",
+                            code,
+                            res.text().unwrap_or_default()
+                        ),
+                    },
+                    Err(e) => eprintln!("Sending to DataDog failed with error : {}", e),
                 }
-                Err(e) => eprintln!("Sending to DataDog failed with error : {}", e)
+            } else {
+                match result {
+                    _ => { /* ignoring errors */ }
+                };
             }
-        } else {
-            match result { _ => {/* ignoring errors */} };
+        } else if cfg!(feature = "self-log") {
+            eprintln!("Error serializing message to string");
         }
     }
 
@@ -93,8 +104,8 @@ impl DataDogLogger {
         let log = DataDogLog {
             message: message.to_string(),
             ddtags: self.config.tags.clone(),
-            service: self.config.service.clone(),
-            ddhostname: self.config.hostname.clone(),
+            service: self.config.service.clone().unwrap_or_default(),
+            host: self.config.hostname.clone().unwrap_or_default(),
             ddsource: self.config.source.clone(),
             level: level.to_string(),
         };
@@ -102,8 +113,10 @@ impl DataDogLogger {
         if let Some(ref sender) = self.sender {
             match sender.try_send(log) {
                 Ok(()) => {}
-                Err(e) => if cfg!(feature = "self-log") {
-                    eprintln!("Error while sending message to logger : {}", e);
+                Err(e) => {
+                    if cfg!(feature = "self-log") {
+                        eprintln!("Error while sending message to logger : {}", e);
+                    }
                 }
             }
         }
@@ -130,7 +143,7 @@ mod tests {
     #[test]
     fn test_logger_stops() {
         let config = DataDogConfig::default();
-        let logger = DataDogLogger::new(config);
+        let logger = DataDogLogger::new(config).unwrap();
 
         logger.log("message", DataDogLogLevel::Alert);
 
