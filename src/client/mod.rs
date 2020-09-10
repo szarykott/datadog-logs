@@ -9,3 +9,6 @@ pub trait DataDogClient {
     fn new(api_key : &str, datadog_url : Url) -> Result<Box<Self>, DataDogLoggerError>;
     fn send(&mut self, messages :&[DataDogLog]) -> Result<(), DataDogLoggerError>;
 }
+
+pub use tcp::TcpDataDogClient;
+pub use http::HttpDataDogLogger;

@@ -1,4 +1,3 @@
-use attohttpc::StatusCode;
 use std::fmt::Display;
 use std::ops::Drop;
 use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
@@ -9,6 +8,7 @@ use super::config::DataDogConfig;
 use super::level::DataDogLogLevel;
 use crate::error::DataDogLoggerError;
 use super::log::DataDogLog;
+use crate::client::DataDogClient;
 
 /// Logger that logs directly to DataDog via HTTP(S)
 pub struct DataDogLogger {
@@ -19,30 +19,25 @@ pub struct DataDogLogger {
 
 impl DataDogLogger {
     /// Creates new DataDogLogger instance
-    pub fn new(config: DataDogConfig) -> Result<Self, DataDogLoggerError> {
+    pub fn new<ClientType>(config: DataDogConfig) -> Result<Self, DataDogLoggerError> 
+    where
+        ClientType : DataDogClient + Send +'static
+    {
         let (sender, receiver) = sync_channel::<DataDogLog>(256);
-        let api_key = config.apikey.clone();
-        let url = Url::parse(&config.datadog_url)?;
+        let mut client = *ClientType::new(config.apikey.as_str(), Url::parse(&config.datadog_url)?)?;
 
         let logger_handle = thread::spawn(move || {
             let mut messages: Vec<DataDogLog> = Vec::new();
+
             loop {
                 match receiver.try_recv() {
                     Ok(msg) => messages.push(msg),
                     Err(TryRecvError::Disconnected) => {
-                        DataDogLogger::send_messages_to_dd(
-                            &messages,
-                            api_key.as_str(),
-                            url.as_str(),
-                        );
+                        client.send(&messages);
                         break;
                     }
                     Err(TryRecvError::Empty) => {
-                        DataDogLogger::send_messages_to_dd(
-                            &messages,
-                            api_key.as_str(),
-                            url.as_str(),
-                        );
+                        client.send(&messages);
                         messages.clear();
                         if let Ok(msg) = receiver.recv() {
                             messages.push(msg);
@@ -57,36 +52,6 @@ impl DataDogLogger {
             sender: Some(sender),
             logger_handle: Some(logger_handle),
         })
-    }
-
-    fn send_messages_to_dd(msgs: &Vec<DataDogLog>, api_key: &str, url: &str) {
-        if let Ok(message_formatted) = serde_json::to_string(&msgs) {
-            let result = attohttpc::post(url)
-                .header_append("Content-Type", "application/json")
-                .header_append("DD-API-KEY", api_key)
-                .text(message_formatted)
-                .send();
-
-            if cfg!(feature = "self-log") {
-                match result {
-                    Ok(res) => match res.status() {
-                        StatusCode::OK => println!("Received OK response from DataDog"),
-                        code => eprintln!(
-                            "Received {} status code from Datadog. Body : {}",
-                            code,
-                            res.text().unwrap_or_default()
-                        ),
-                    },
-                    Err(e) => eprintln!("Sending to DataDog failed with error : {}", e),
-                }
-            } else {
-                match result {
-                    _ => { /* ignoring errors */ }
-                };
-            }
-        } else if cfg!(feature = "self-log") {
-            eprintln!("Error serializing message to string");
-        }
     }
 
     /// Sends logs to DataDog
@@ -129,11 +94,23 @@ impl Drop for DataDogLogger {
 mod tests {
 
     use super::*;
+    use crate::client::{HttpDataDogLogger, TcpDataDogClient};
 
     #[test]
-    fn test_logger_stops() {
+    fn test_logger_stops_http() {
         let config = DataDogConfig::default();
-        let logger = DataDogLogger::new(config).unwrap();
+        let logger = DataDogLogger::new::<HttpDataDogLogger>(config).unwrap();
+
+        logger.log("message", DataDogLogLevel::Alert);
+
+        // it should hang forever if logging loop does not break
+        std::mem::drop(logger);
+    }
+
+    #[test]
+    fn test_logger_stops_tcp() {
+        let config = DataDogConfig::default();
+        let logger = DataDogLogger::new::<TcpDataDogClient>(config).unwrap();
 
         logger.log("message", DataDogLogLevel::Alert);
 

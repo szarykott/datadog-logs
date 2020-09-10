@@ -24,7 +24,7 @@ impl DataDogClient for TcpDataDogClient {
         }))
     }
 
-    fn send(&mut self, messages :&[DataDogLog]) -> Result<(), DataDogLoggerError> {
+    fn send(&mut self, messages : &[DataDogLog]) -> Result<(), DataDogLoggerError> {
         // Fill buffer
         self.buffer.clear();
         self.buffer.append(&mut self.api_key.bytes().collect());
@@ -32,7 +32,7 @@ impl DataDogClient for TcpDataDogClient {
         self.buffer.append(&mut serde_json::to_vec(&messages)?);
 
         // Send the message
-        let mut num_retries = 0;
+        let mut num_retries : u8 = 0;
         loop {
             match self.tcp_stream.write(&self.buffer).and(self.tcp_stream.flush()) {
                 Ok(_) => break Ok(()),

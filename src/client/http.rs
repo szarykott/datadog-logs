@@ -4,7 +4,7 @@ use crate::error::DataDogLoggerError;
 use super::DataDogClient;
 use attohttpc::StatusCode;
 
-struct HttpDataDogLogger {
+pub struct HttpDataDogLogger {
     datadog_url : Url,
     api_key : String
 }
@@ -45,6 +45,6 @@ impl DataDogClient for HttpDataDogLogger {
         } else if cfg!(feature = "self-log") {
             eprintln!("Error serializing message to string");
         }
-        todo!()
+        Ok(())
     }
 }

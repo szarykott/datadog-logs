@@ -1,4 +1,5 @@
 use crate::{
+    client::HttpDataDogLogger,
     error::DataDogLoggerError,
     logger::{DataDogConfig, DataDogLogLevel, DataDogLogger}
 };
@@ -30,7 +31,7 @@ impl DataDogLogger {
         config: DataDogConfig,
         level: LevelFilter,
     ) -> Result<(), DataDogLoggerError> {
-        let logger = DataDogLogger::new(config)?;
+        let logger = DataDogLogger::new::<HttpDataDogLogger>(config)?;
         log::set_boxed_logger(Box::new(logger))?;
         log::set_max_level(level);
         Ok(())
