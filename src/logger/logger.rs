@@ -1,5 +1,4 @@
 use attohttpc::StatusCode;
-use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 use std::ops::Drop;
 use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
@@ -8,17 +7,8 @@ use url::Url;
 
 use super::config::DataDogConfig;
 use super::level::DataDogLogLevel;
-use super::error::DataDogLoggerError;
-
-#[derive(Serialize, Deserialize)]
-struct DataDogLog {
-    message: String,
-    ddtags: Option<String>,
-    ddsource: String,
-    host: String,
-    service: String,
-    level: String,
-}
+use crate::error::DataDogLoggerError;
+use super::log::DataDogLog;
 
 /// Logger that logs directly to DataDog via HTTP(S)
 pub struct DataDogLogger {

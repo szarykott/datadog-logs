@@ -1,9 +1,9 @@
 mod config;
 mod level;
 mod logger;
-mod error;
+mod log;
 
 pub use config::DataDogConfig;
 pub use level::DataDogLogLevel;
 pub use logger::DataDogLogger;
-pub use error::DataDogLoggerError;
+pub use self::log::DataDogLog;

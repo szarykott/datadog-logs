@@ -1,4 +1,7 @@
-use crate::logger::{DataDogConfig, DataDogLogLevel, DataDogLogger, DataDogLoggerError};
+use crate::{
+    error::DataDogLoggerError,
+    logger::{DataDogConfig, DataDogLogLevel, DataDogLogger}
+};
 use log::{LevelFilter, Log, Metadata, Record};
 
 /// Requires `log` feature enabled

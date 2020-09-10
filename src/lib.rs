@@ -10,7 +10,9 @@
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
 
-#[cfg(feature = "log-integration")]
-mod log_integration;
 /// Contains DataDog logger implementation
 pub mod logger;
+mod client;
+mod error;
+#[cfg(feature = "log-integration")]
+mod log_integration;
