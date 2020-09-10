@@ -13,20 +13,18 @@ pub struct TcpDataDogClient {
     buffer : Vec<u8>
 }
 
-impl TcpDataDogClient {
-    pub fn new(api_key : &str, datadog_url : Url) -> Result<Self, DataDogLoggerError> {
+impl DataDogClient for TcpDataDogClient {
+    fn new(api_key : &str, datadog_url : Url) -> Result<Box<Self>, DataDogLoggerError> {
         let tcp_stream = TcpStream::connect(datadog_url.clone().into_string())?;
-        Ok(TcpDataDogClient {
+        Ok(Box::new(TcpDataDogClient {
             api_key : api_key.into(),
             datadog_url,
             tcp_stream,
             buffer : Vec::new()
-        })
+        }))
     }
-}
 
-impl DataDogClient for TcpDataDogClient {
-    fn send(&mut self, messages :&Vec<DataDogLog>) -> Result<(), DataDogLoggerError> {
+    fn send(&mut self, messages :&[DataDogLog]) -> Result<(), DataDogLoggerError> {
         // Fill buffer
         self.buffer.clear();
         self.buffer.append(&mut self.api_key.bytes().collect());
