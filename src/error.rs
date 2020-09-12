@@ -10,11 +10,13 @@ pub enum DataDogLoggerError {
     MessageSerializationError(serde_json::Error),
     /// I/O error
     IoError(std::io::Error),
+    /// Logger configuration error
+    ConfigError(String),
+    /// Generic error container
+    OtherError(String),
     /// Http logger error
     #[cfg(feature = "http")]
     HttpError(attohttpc::Error),
-    /// Generic error container
-    OtherError(String),
     /// Error that can happen during DataDogLogger initialization with log
     #[cfg(feature = "log-integration")]
     LogIntegrationError(log::SetLoggerError),
@@ -26,9 +28,10 @@ impl Display for DataDogLoggerError {
             DataDogLoggerError::UrlParsingError(e) => write!(f, "{}", e),
             DataDogLoggerError::MessageSerializationError(e) => write!(f, "{}", e),
             DataDogLoggerError::IoError(e) => write!(f, "{}", e),
+            DataDogLoggerError::ConfigError(e) => write!(f, "{}", e),
+            DataDogLoggerError::OtherError(e) => write!(f, "{}", e),
             #[cfg(feature = "http")]
             DataDogLoggerError::HttpError(e) => write!(f, "{}", e),
-            DataDogLoggerError::OtherError(e) => write!(f, "{}", e),
             #[cfg(feature = "log-integration")]
             DataDogLoggerError::LogIntegrationError(e) => write!(f, "{}", e),
         }

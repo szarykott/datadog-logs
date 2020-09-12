@@ -18,8 +18,7 @@ fn test_logger_stops_http() {
 
 #[test]
 fn test_logger_stops_tcp() {
-    let mut config = DataDogConfig::default();
-    config.datadog_url = "intake.logs.datadoghq.com:10514".into();
+    let config = DataDogConfig::default();
     let logger = DataDogLogger::new::<TcpDataDogClient>(config).unwrap();
 
     logger.log("message", DataDogLogLevel::Alert);

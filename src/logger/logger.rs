@@ -2,7 +2,6 @@ use std::fmt::Display;
 use std::ops::Drop;
 use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
 use std::thread;
-use url::Url;
 
 use super::level::DataDogLogLevel;
 use super::log::DataDogLog;
@@ -24,9 +23,8 @@ impl DataDogLogger {
         ClientType: DataDogClient + Send + 'static,
     {
         let (sender, receiver) =
-            sync_channel::<DataDogLog>(config.messages_channel_capacity.unwrap_or(256));
-        let mut client =
-            *ClientType::new(config.apikey.as_str(), Url::parse(&config.datadog_url)?)?;
+            sync_channel::<DataDogLog>(config.messages_channel_capacity);
+        let mut client = *ClientType::new(&config)?;
 
         let logger_handle = thread::spawn(move || {
             let mut messages: Vec<DataDogLog> = Vec::new();

@@ -1,27 +1,35 @@
 use super::DataDogClient;
 use crate::error::DataDogLoggerError;
 use crate::logger::DataDogLog;
+use crate::config::{DataDogConfig, DataDogTcpConfig};
 use std::io::ErrorKind;
 use std::io::Write;
 use std::net::TcpStream;
 use url::Url;
 
 /// Datadog network client using TCP protocol directly
+///
+/// This client only sends data to DataDog, not verifying response.
+/// While it increases performance it also hinders debugging with `self-log` feature giving misleading results.
+/// This issue might be tackled in future releases.
 pub struct TcpDataDogClient {
     api_key: String,
-    datadog_url: Url,
     tcp_stream: TcpStream,
     buffer: Vec<u8>,
+    tcp_config : DataDogTcpConfig
 }
 
 impl DataDogClient for TcpDataDogClient {
-    fn new(api_key: &str, datadog_url: Url) -> Result<Box<Self>, DataDogLoggerError> {
-        let tcp_stream = TcpStream::connect(datadog_url.clone().into_string())?;
+    fn new(config : &DataDogConfig) -> Result<Box<Self>, DataDogLoggerError> {
+        let tcp_config = config.tcp_config.clone();
+        let datadog_domain = Url::parse(&tcp_config.domain)?;
+
+        let tcp_stream = TcpStream::connect(datadog_domain.clone().into_string())?;
         Ok(Box::new(TcpDataDogClient {
-            api_key: api_key.into(),
-            datadog_url,
+            api_key: config.apikey.clone().into(),
             tcp_stream,
             buffer: Vec::new(),
+            tcp_config
         }))
     }
 
@@ -44,7 +52,7 @@ impl DataDogClient for TcpDataDogClient {
                 Err(e) => {
                     if num_retries < 3 && should_try_reconnect(e.kind()) {
                         self.tcp_stream =
-                            TcpStream::connect(self.datadog_url.clone().into_string())?;
+                            TcpStream::connect(self.tcp_config.domain.clone())?;
                         num_retries += 1;
                     } else {
                         break Err(e.into());
