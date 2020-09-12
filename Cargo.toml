@@ -16,8 +16,6 @@ keywords = ["logging", "datadog"]
 default = ["log-integration"]
 # enables all features except for self-log
 full = ["log-integration", "http"]
-# enables all features with for self-log
-full-self-log = ["log-integration", "http", "self-log"]
 # provides integration with log crate
 log-integration = ["log"]
 # enables logging via HTTP
