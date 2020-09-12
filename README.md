@@ -1,6 +1,6 @@
 # Datadog Logs
 
-This simple crate can be used to log to DataDog directly via HTTP(S).
+This simple crate can be used to log to DataDog directly via HTTP(S) or TCP (with TLS).
 
 It is as minimal as possible with the idea that logging should not consume time in your application execution path. Therefore it offloads the task of logging to a separate thread.
 

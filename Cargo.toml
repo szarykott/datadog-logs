@@ -14,14 +14,20 @@ keywords = ["logging", "datadog"]
 [features]
 # default set of dependencies
 default = ["log-integration"]
+# enables all features except for self-log
+full = ["log-integration", "http"]
+# enables all features with for self-log
+full-self-log = ["log-integration", "http", "self-log"]
 # provides integration with log crate
 log-integration = ["log"]
+# enables logging via HTTP
+http = ["attohttpc"]
 # enables logging of errors within logger to console
 self-log = []
 
 [dependencies]
 serde_json = { version = "1.0" }
 serde = { version = "1.0", features = ["derive"] } 
-attohttpc = { version = "0.15", features = ["tls", "compress"] }
 url = { version = "2.1" }
+attohttpc = { version = "0.15", features = ["tls", "compress"], optional = true }
 log = { version = "0.4", features = ["std"], optional = true }

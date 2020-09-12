@@ -1,50 +1,38 @@
-use url::Url;
-use crate::logger::DataDogLog;
-use crate::error::DataDogLoggerError;
 use super::DataDogClient;
-use attohttpc::StatusCode;
+use crate::error::DataDogLoggerError;
+use crate::logger::DataDogLog;
+use url::Url;
 
-pub struct HttpDataDogLogger {
-    datadog_url : Url,
-    api_key : String
+/// Datadog network client using HTTP protocol
+pub struct HttpDataDogClient {
+    datadog_url: Url,
+    api_key: String,
 }
 
-impl DataDogClient for HttpDataDogLogger {
-    fn new(api_key : &str, datadog_url : Url) -> Result<Box<Self>, DataDogLoggerError> {
-        Ok(Box::new(HttpDataDogLogger {
-            api_key : api_key.into(),
+impl DataDogClient for HttpDataDogClient {
+    fn new(api_key: &str, datadog_url: Url) -> Result<Box<Self>, DataDogLoggerError> {
+        Ok(Box::new(HttpDataDogClient {
+            api_key: api_key.into(),
             datadog_url,
         }))
     }
 
-    fn send(&mut self, messages :&[DataDogLog]) -> Result<(), DataDogLoggerError> {
-        if let Ok(message_formatted) = serde_json::to_string(&messages) {
-            let result = attohttpc::post(&self.datadog_url)
-                .header_append("Content-Type", "application/json")
-                .header_append("DD-API-KEY", &self.api_key)
-                .text(message_formatted)
-                .send();
+    fn send(&mut self, messages: &[DataDogLog]) -> Result<(), DataDogLoggerError> {
+        let formatted_message = serde_json::to_string(&messages)?;
+        let result = attohttpc::post(&self.datadog_url)
+            .header_append("Content-Type", "application/json")
+            .header_append("DD-API-KEY", &self.api_key)
+            .text(formatted_message)
+            .send()?;
 
-            if cfg!(feature = "self-log") {
-                match result {
-                    Ok(res) => match res.status() {
-                        StatusCode::OK => println!("Received OK response from DataDog"),
-                        code => eprintln!(
-                            "Received {} status code from Datadog. Body : {}",
-                            code,
-                            res.text().unwrap_or_default()
-                        ),
-                    },
-                    Err(e) => eprintln!("Sending to DataDog failed with error : {}", e),
-                }
-            } else {
-                match result {
-                    _ => { /* ignoring errors */ }
-                };
-            }
-        } else if cfg!(feature = "self-log") {
-            eprintln!("Error serializing message to string");
+        if !result.is_success() {
+            Err(DataDogLoggerError::OtherError(format!(
+                "Datadog response does not indicate success. Status code : {}, Body : {}",
+                result.status(),
+                result.text().unwrap_or_default()
+            )))
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 }

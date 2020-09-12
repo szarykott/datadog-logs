@@ -1,9 +1,7 @@
-mod config;
 mod level;
-mod logger;
 mod log;
+mod logger;
 
-pub use config::DataDogConfig;
+pub use self::log::DataDogLog;
 pub use level::DataDogLogLevel;
 pub use logger::DataDogLogger;
-pub use self::log::DataDogLog;

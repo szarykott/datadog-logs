@@ -4,13 +4,13 @@ use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
 use std::thread;
 use url::Url;
 
-use super::config::DataDogConfig;
 use super::level::DataDogLogLevel;
-use crate::error::DataDogLoggerError;
 use super::log::DataDogLog;
 use crate::client::DataDogClient;
+use crate::config::DataDogConfig;
+use crate::error::DataDogLoggerError;
 
-/// Logger that logs directly to DataDog via HTTP(S)
+/// Logger that logs directly to DataDog via HTTP(S) or TCP
 pub struct DataDogLogger {
     config: DataDogConfig,
     sender: Option<SyncSender<DataDogLog>>,
@@ -19,12 +19,14 @@ pub struct DataDogLogger {
 
 impl DataDogLogger {
     /// Creates new DataDogLogger instance
-    pub fn new<ClientType>(config: DataDogConfig) -> Result<Self, DataDogLoggerError> 
+    pub fn new<ClientType>(config: DataDogConfig) -> Result<Self, DataDogLoggerError>
     where
-        ClientType : DataDogClient + Send +'static
+        ClientType: DataDogClient + Send + 'static,
     {
-        let (sender, receiver) = sync_channel::<DataDogLog>(256);
-        let mut client = *ClientType::new(config.apikey.as_str(), Url::parse(&config.datadog_url)?)?;
+        let (sender, receiver) =
+            sync_channel::<DataDogLog>(config.messages_channel_capacity.unwrap_or(256));
+        let mut client =
+            *ClientType::new(config.apikey.as_str(), Url::parse(&config.datadog_url)?)?;
 
         let logger_handle = thread::spawn(move || {
             let mut messages: Vec<DataDogLog> = Vec::new();
@@ -33,11 +35,11 @@ impl DataDogLogger {
                 match receiver.try_recv() {
                     Ok(msg) => messages.push(msg),
                     Err(TryRecvError::Disconnected) => {
-                        client.send(&messages);
+                        DataDogLogger::send_with_self_log(&mut client, &messages);
                         break;
                     }
                     Err(TryRecvError::Empty) => {
-                        client.send(&messages);
+                        DataDogLogger::send_with_self_log(&mut client, &messages);
                         messages.clear();
                         if let Ok(msg) = receiver.recv() {
                             messages.push(msg);
@@ -52,6 +54,24 @@ impl DataDogLogger {
             sender: Some(sender),
             logger_handle: Some(logger_handle),
         })
+    }
+
+    fn send_with_self_log<ClientType: DataDogClient>(
+        client: &mut ClientType,
+        messages: &[DataDogLog],
+    ) {
+        match client.send(&messages) {
+            Ok(_) => {
+                if cfg!(feature = "self-log") {
+                    println!("DatadogLogger : messages sent succesfully");
+                }
+            }
+            Err(e) => {
+                if cfg!(feature = "self-log") {
+                    eprintln!("DatadogLogger : error while sending messages : {}", e);
+                }
+            }
+        }
     }
 
     /// Sends logs to DataDog
@@ -87,34 +107,5 @@ impl Drop for DataDogLogger {
         if let Some(handle) = self.logger_handle.take() {
             handle.join().unwrap_or_default();
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-
-    use super::*;
-    use crate::client::{HttpDataDogLogger, TcpDataDogClient};
-
-    #[test]
-    fn test_logger_stops_http() {
-        let config = DataDogConfig::default();
-        let logger = DataDogLogger::new::<HttpDataDogLogger>(config).unwrap();
-
-        logger.log("message", DataDogLogLevel::Alert);
-
-        // it should hang forever if logging loop does not break
-        std::mem::drop(logger);
-    }
-
-    #[test]
-    fn test_logger_stops_tcp() {
-        let config = DataDogConfig::default();
-        let logger = DataDogLogger::new::<TcpDataDogClient>(config).unwrap();
-
-        logger.log("message", DataDogLogLevel::Alert);
-
-        // it should hang forever if logging loop does not break
-        std::mem::drop(logger);
     }
 }
