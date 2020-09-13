@@ -89,6 +89,9 @@ pub struct DataDogTcpConfig {
     /// It is possible to change it in case Datadog changes it in the future.
     #[serde(default)]
     pub non_tls_port: usize,
+    /// Port for encrypted connections. It defaults to 80.
+    #[serde(default)]
+    pub tls_port : usize
 }
 
 impl Default for DataDogTcpConfig {
@@ -97,6 +100,7 @@ impl Default for DataDogTcpConfig {
             use_tls: true,
             domain: "intake.logs.datadoghq.com".into(),
             non_tls_port: 10514,
+            tls_port: 80
         }
     }
 }

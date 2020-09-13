@@ -5,7 +5,6 @@ use crate::logger::DataDogLog;
 use std::io::ErrorKind;
 use std::io::Write;
 use std::net::TcpStream;
-use url::Url;
 
 /// Datadog network client using TCP protocol directly
 ///
@@ -22,9 +21,13 @@ pub struct TcpDataDogClient {
 impl DataDogClient for TcpDataDogClient {
     fn new(config: &DataDogConfig) -> Result<Box<Self>, DataDogLoggerError> {
         let tcp_config = config.tcp_config.clone();
-        let datadog_domain = Url::parse(&tcp_config.domain)?;
+        let address = if !tcp_config.use_tls {
+            format!("{}:{}", tcp_config.domain, tcp_config.non_tls_port)
+        } else {
+            format!("{}:{}", tcp_config.domain, tcp_config.tls_port)
+        };
 
-        let tcp_stream = TcpStream::connect(datadog_domain.clone().into_string())?;
+        let tcp_stream = TcpStream::connect(address)?;
         Ok(Box::new(TcpDataDogClient {
             api_key: config.apikey.clone().into(),
             tcp_stream,

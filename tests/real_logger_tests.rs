@@ -19,8 +19,21 @@ fn test_logger_stops_http() {
 }
 
 #[test]
-fn test_logger_stops_tcp() {
-    let config = DataDogConfig::default();
+fn test_logger_stops_tcp_without_tls() {
+    let mut config = DataDogConfig::default();
+    config.tcp_config.use_tls = false;
+    let (logger, _) = DataDogLogger::new::<TcpDataDogClient>(config).unwrap();
+
+    logger.log("message", DataDogLogLevel::Alert);
+
+    // it should hang forever if logging loop does not break
+    std::mem::drop(logger);
+}
+
+#[test]
+fn test_logger_stops_tcp_with_tls() {
+    let mut config = DataDogConfig::default();
+    config.tcp_config.use_tls = false;
     let (logger, _) = DataDogLogger::new::<TcpDataDogClient>(config).unwrap();
 
     logger.log("message", DataDogLogLevel::Alert);
