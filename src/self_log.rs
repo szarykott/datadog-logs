@@ -2,17 +2,17 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-/// Represents possible events occuring inside DataDog logger
+/// Represents possible events occuring inside DataDog logger.
 pub enum SelfLogEvent {
-    /// Represents logger startup
+    /// Represents logger startup.
     Start,
-    /// Represents logger tear down
+    /// Represents logger tear down.
     Stop,
-    /// Represents error during sending log to DataDog
+    /// Represents error during sending log to DataDog, a network client error.
     ClientError(String),
-    /// Represents error inside logger itself
+    /// Represents error inside logger itself.
     LoggerError(String),
-    /// Represents succesfull log sending to DataDog
+    /// Represents succesfull log sending to DataDog.
     Succes,
 }
 
