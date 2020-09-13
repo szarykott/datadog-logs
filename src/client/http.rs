@@ -1,8 +1,8 @@
 use super::DataDogClient;
+use crate::config::DataDogConfig;
 use crate::error::DataDogLoggerError;
 use crate::logger::DataDogLog;
 use url::Url;
-use crate::config::DataDogConfig;
 
 /// Datadog network client using HTTP protocol
 pub struct HttpDataDogClient {
@@ -11,11 +11,11 @@ pub struct HttpDataDogClient {
 }
 
 impl DataDogClient for HttpDataDogClient {
-    fn new(config : &DataDogConfig) -> Result<Box<Self>, DataDogLoggerError> {
+    fn new(config: &DataDogConfig) -> Result<Box<Self>, DataDogLoggerError> {
         let http_config = config.http_config.clone();
         Ok(Box::new(HttpDataDogClient {
             api_key: config.apikey.clone().into(),
-            datadog_url : Url::parse(&http_config.url)?,
+            datadog_url: Url::parse(&http_config.url)?,
         }))
     }
 

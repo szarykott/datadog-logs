@@ -1,7 +1,7 @@
 use super::DataDogClient;
+use crate::config::{DataDogConfig, DataDogTcpConfig};
 use crate::error::DataDogLoggerError;
 use crate::logger::DataDogLog;
-use crate::config::{DataDogConfig, DataDogTcpConfig};
 use std::io::ErrorKind;
 use std::io::Write;
 use std::net::TcpStream;
@@ -16,11 +16,11 @@ pub struct TcpDataDogClient {
     api_key: String,
     tcp_stream: TcpStream,
     buffer: Vec<u8>,
-    tcp_config : DataDogTcpConfig
+    tcp_config: DataDogTcpConfig,
 }
 
 impl DataDogClient for TcpDataDogClient {
-    fn new(config : &DataDogConfig) -> Result<Box<Self>, DataDogLoggerError> {
+    fn new(config: &DataDogConfig) -> Result<Box<Self>, DataDogLoggerError> {
         let tcp_config = config.tcp_config.clone();
         let datadog_domain = Url::parse(&tcp_config.domain)?;
 
@@ -29,7 +29,7 @@ impl DataDogClient for TcpDataDogClient {
             api_key: config.apikey.clone().into(),
             tcp_stream,
             buffer: Vec::new(),
-            tcp_config
+            tcp_config,
         }))
     }
 
@@ -51,8 +51,7 @@ impl DataDogClient for TcpDataDogClient {
                 Ok(_) => break Ok(()),
                 Err(e) => {
                     if num_retries < 3 && should_try_reconnect(e.kind()) {
-                        self.tcp_stream =
-                            TcpStream::connect(self.tcp_config.domain.clone())?;
+                        self.tcp_stream = TcpStream::connect(self.tcp_config.domain.clone())?;
                         num_retries += 1;
                     } else {
                         break Err(e.into());

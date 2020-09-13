@@ -20,8 +20,6 @@ full = ["log-integration", "http"]
 log-integration = ["log"]
 # enables logging via HTTP
 http = ["attohttpc"]
-# enables logging of errors within logger to console
-self-log = []
 
 [dependencies]
 serde_json = { version = "1.0" }

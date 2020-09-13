@@ -8,7 +8,7 @@
 //! Enables all features except for `self-log` that needs to be enabled separately.
 //!
 //! ### http
-//! Enables optional HTTP logger. 
+//! Enables optional HTTP logger.
 //! It is disabled by default not to bring unnecessary dependencies that increase compilation time.
 //!
 //! ### log-integration
@@ -30,3 +30,5 @@ pub mod error;
 mod log_integration;
 /// Contains DataDog logger implementation
 pub mod logger;
+/// Self-log infrastructure
+pub mod self_log;

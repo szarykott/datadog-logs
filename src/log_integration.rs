@@ -3,8 +3,10 @@ use crate::{
     config::DataDogConfig,
     error::DataDogLoggerError,
     logger::{DataDogLogLevel, DataDogLogger},
+    self_log::SelfLogEvent,
 };
 use log::{LevelFilter, Log, Metadata, Record};
+use std::sync::mpsc::Receiver;
 
 /// Requires `log` feature enabled
 impl Log for DataDogLogger {
@@ -32,9 +34,22 @@ impl DataDogLogger {
         config: DataDogConfig,
         level: LevelFilter,
     ) -> Result<(), DataDogLoggerError> {
-        let logger = DataDogLogger::new::<TcpDataDogClient>(config)?;
+        let (logger, _) = DataDogLogger::new::<TcpDataDogClient>(config)?;
         log::set_boxed_logger(Box::new(logger))?;
         log::set_max_level(level);
         Ok(())
+    }
+
+    /// Initializes DataDogLogger with `log` crate and self log receiver
+    ///
+    /// Requires `log` feature enabled
+    pub fn init_with_log_and_self_log(
+        config: DataDogConfig,
+        level: LevelFilter,
+    ) -> Result<Receiver<SelfLogEvent>, DataDogLoggerError> {
+        let (logger, receiver) = DataDogLogger::new::<TcpDataDogClient>(config)?;
+        log::set_boxed_logger(Box::new(logger))?;
+        log::set_max_level(level);
+        Ok(receiver)
     }
 }
