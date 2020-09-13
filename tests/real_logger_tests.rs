@@ -32,8 +32,7 @@ fn test_logger_stops_tcp_without_tls() {
 
 #[test]
 fn test_logger_stops_tcp_with_tls() {
-    let mut config = DataDogConfig::default();
-    config.tcp_config.use_tls = false;
+    let config = DataDogConfig::default();
     let (logger, _) = DataDogLogger::new::<TcpDataDogClient>(config).unwrap();
 
     logger.log("message", DataDogLogLevel::Alert);
