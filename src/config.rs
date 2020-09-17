@@ -100,7 +100,7 @@ impl Default for DataDogTcpConfig {
             use_tls: true,
             domain: "intake.logs.datadoghq.com".into(),
             non_tls_port: 10514,
-            tls_port: 80
+            tls_port: 443
         }
     }
 }
