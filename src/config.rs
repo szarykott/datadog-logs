@@ -89,12 +89,14 @@ pub struct DataDogTcpConfig {
     /// It is possible to change it in case Datadog changes it in the future.
     #[serde(default)]
     pub non_tls_port: usize,
-    /// Port for encrypted connections. It defaults to 80.
+    /// Port for encrypted connections. It defaults to 443.
     #[serde(default)]
     pub tls_port : usize
 }
 
 impl Default for DataDogTcpConfig {
+    /// Default configuration is US default config.
+    /// EU config needs to be input manually.
     fn default() -> Self {
         DataDogTcpConfig {
             use_tls: true,

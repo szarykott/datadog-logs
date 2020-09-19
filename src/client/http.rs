@@ -13,6 +13,7 @@ pub struct HttpDataDogClient {
 impl DataDogClient for HttpDataDogClient {
     fn new(config: &DataDogConfig) -> Result<Box<Self>, DataDogLoggerError> {
         let http_config = config.http_config.clone();
+
         Ok(Box::new(HttpDataDogClient {
             api_key: config.apikey.clone().into(),
             datadog_url: Url::parse(&http_config.url)?,

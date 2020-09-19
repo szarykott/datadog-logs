@@ -27,3 +27,4 @@ serde = { version = "1.0", features = ["derive"] }
 url = { version = "2.1" }
 attohttpc = { version = "0.15", features = ["tls", "compress"], optional = true }
 log = { version = "0.4", features = ["std"], optional = true }
+native-tls = { version = "0.2" }
