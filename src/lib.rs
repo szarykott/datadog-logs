@@ -30,5 +30,4 @@ pub mod error;
 mod log_integration;
 /// Contains DataDog logger implementation
 pub mod logger;
-/// Self-log infrastructure
-pub mod self_log;
+mod statics;

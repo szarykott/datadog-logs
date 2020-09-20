@@ -15,7 +15,6 @@ pub enum DataDogLoggerError {
     /// Generic error container
     OtherError(String),
     /// Http logger error
-    #[cfg(feature = "http")]
     HttpError(attohttpc::Error),
     /// Error that can happen during DataDogLogger initialization with log
     #[cfg(feature = "log-integration")]
@@ -30,7 +29,6 @@ impl Display for DataDogLoggerError {
             DataDogLoggerError::IoError(e) => write!(f, "{}", e),
             DataDogLoggerError::ConfigError(e) => write!(f, "{}", e),
             DataDogLoggerError::OtherError(e) => write!(f, "{}", e),
-            #[cfg(feature = "http")]
             DataDogLoggerError::HttpError(e) => write!(f, "{}", e),
             #[cfg(feature = "log-integration")]
             DataDogLoggerError::LogIntegrationError(e) => write!(f, "{}", e),
@@ -56,7 +54,6 @@ impl From<std::io::Error> for DataDogLoggerError {
     }
 }
 
-#[cfg(feature = "http")]
 impl From<attohttpc::Error> for DataDogLoggerError {
     fn from(e: attohttpc::Error) -> Self {
         DataDogLoggerError::HttpError(e)

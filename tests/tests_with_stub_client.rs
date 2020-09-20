@@ -1,21 +1,22 @@
 mod utils;
 
 use datadog_logs::{
-    config::DataDogConfig, 
-    logger::{DataDogLogLevel, DataDogLogger}, 
-    self_log::SelfLogEvent
+    config::DataDogConfig,
+    logger::{DataDogLogLevel, DataDogLogger},
 };
 
 #[test]
 fn test_simple_logger_run() {
-    let mut config = DataDogConfig::default();
-    config.enable_self_log = true;
-    let (logger, self_log) = DataDogLogger::new::<utils::DataDogClientStub>(config).unwrap();
+    let config = DataDogConfig::default();
+    let client = utils::DataDogClientStub::new();
+
+    let messages = client.messages.clone();
+
+    let logger = DataDogLogger::new(client, config).unwrap();
 
     logger.log("message", DataDogLogLevel::Alert);
 
     std::mem::drop(logger);
 
-    let logs : Vec<SelfLogEvent> = self_log.iter().collect();
-    assert_eq!(vec![SelfLogEvent::Start, SelfLogEvent::Succes, SelfLogEvent::Stop], logs);
+    assert_eq!(1, messages.lock().unwrap().len());
 }

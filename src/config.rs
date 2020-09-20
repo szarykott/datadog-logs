@@ -25,6 +25,8 @@ pub struct DataDogConfig {
     /// TCP client specific configuration
     /// It only needs to be specified for TCP logging in case of non-default settings.
     /// Otherwise default is assumed.
+    ///
+    /// Even though the crate does not support TCP client now, config is here to be an extensibility point.
     #[serde(default)]
     pub tcp_config: DataDogTcpConfig,
     /// Capacity of channel connecting logger thread with other threads.
@@ -91,7 +93,7 @@ pub struct DataDogTcpConfig {
     pub non_tls_port: usize,
     /// Port for encrypted connections. It defaults to 443.
     #[serde(default)]
-    pub tls_port : usize
+    pub tls_port: usize,
 }
 
 impl Default for DataDogTcpConfig {
@@ -102,7 +104,7 @@ impl Default for DataDogTcpConfig {
             use_tls: true,
             domain: "intake.logs.datadoghq.com".into(),
             non_tls_port: 10514,
-            tls_port: 443
+            tls_port: 443,
         }
     }
 }

@@ -10,16 +10,19 @@ pub struct HttpDataDogClient {
     api_key: String,
 }
 
-impl DataDogClient for HttpDataDogClient {
-    fn new(config: &DataDogConfig) -> Result<Box<Self>, DataDogLoggerError> {
+impl HttpDataDogClient {
+    /// Creates new DataDog HTTP(S) logger
+    pub fn new(config: &DataDogConfig) -> Result<Self, DataDogLoggerError> {
         let http_config = config.http_config.clone();
 
-        Ok(Box::new(HttpDataDogClient {
+        Ok(HttpDataDogClient {
             api_key: config.apikey.clone().into(),
             datadog_url: Url::parse(&http_config.url)?,
-        }))
+        })
     }
+}
 
+impl DataDogClient for HttpDataDogClient {
     fn send(&mut self, messages: &[DataDogLog]) -> Result<(), DataDogLoggerError> {
         let formatted_message = serde_json::to_string(&messages)?;
         let result = attohttpc::post(&self.datadog_url)
