@@ -1,1 +1,1 @@
-pub static CRATE_NAME : &'static str = "datadog-logs";
+pub static CRATE_NAME: &'static str = "datadog-logs";

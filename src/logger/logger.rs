@@ -28,7 +28,10 @@ impl DataDogLogger {
         let self_log_enabled = config.enable_self_log;
 
         let logger_handle = thread::spawn(move || {
-            trace!(target : CRATE_NAME, "Datadog logger thread starting to ingest messages.");
+            trace!(
+                target: CRATE_NAME,
+                "Datadog logger thread starting to ingest messages."
+            );
 
             let mut messages: Vec<DataDogLog> = Vec::new();
 
@@ -37,13 +40,19 @@ impl DataDogLogger {
                     Ok(msg) => {
                         messages.push(msg);
                         if self_log_enabled {
-                            trace!(target: CRATE_NAME, "Logger thread pushed new message to batch.");
+                            trace!(
+                                target: CRATE_NAME,
+                                "Logger thread pushed new message to batch."
+                            );
                         }
                     }
                     Err(TryRecvError::Disconnected) => {
                         DataDogLogger::send_with_self_log(&mut client, self_log_enabled, &messages);
                         if self_log_enabled {
-                            trace!(target: CRATE_NAME, "Logger thread sent batch of messages after channel disconnect.");
+                            trace!(
+                                target: CRATE_NAME,
+                                "Logger thread sent batch of messages after channel disconnect."
+                            );
                         }
                         break;
                     }
@@ -60,7 +69,10 @@ impl DataDogLogger {
                 };
             }
 
-            trace!(target : CRATE_NAME, "Datadog logger thread stopping to ingest messages.");
+            trace!(
+                target: CRATE_NAME,
+                "Datadog logger thread stopping to ingest messages."
+            );
         });
 
         Ok(DataDogLogger {
@@ -78,12 +90,19 @@ impl DataDogLogger {
         match client.send(&messages) {
             Ok(_) => {
                 if self_log_enabled {
-                    trace!(target : CRATE_NAME, "Client succesfully sent messages to Datadog.");
+                    trace!(
+                        target: CRATE_NAME,
+                        "Client succesfully sent messages to Datadog."
+                    );
                 }
             }
             Err(e) => {
                 if self_log_enabled {
-                    trace!(target : CRATE_NAME, "Client failed to send messages to Datadog. Error : {}", e);
+                    trace!(
+                        target: CRATE_NAME,
+                        "Client failed to send messages to Datadog. Error : {}",
+                        e
+                    );
                 }
             }
         }
@@ -105,7 +124,11 @@ impl DataDogLogger {
                 Ok(()) => {}
                 Err(e) => {
                     if self.config.enable_self_log {
-                        trace!(target : CRATE_NAME, "Failed to send message to logger thread. Error : {}", e);
+                        trace!(
+                            target: CRATE_NAME,
+                            "Failed to send message to logger thread. Error : {}",
+                            e
+                        );
                     }
                 }
             }

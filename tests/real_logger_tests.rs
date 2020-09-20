@@ -1,8 +1,6 @@
 use datadog_logs::client::HttpDataDogClient;
 use datadog_logs::{config::DataDogConfig, logger::DataDogLogLevel, logger::DataDogLogger};
 
-mod utils;
-
 #[test]
 fn test_logger_stops_http() {
     let config = DataDogConfig::default();

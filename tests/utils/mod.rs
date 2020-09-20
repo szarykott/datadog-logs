@@ -1,16 +1,16 @@
 use datadog_logs::{client::DataDogClient, error::DataDogLoggerError};
-use std::sync::{Mutex, Arc};
+use std::sync::{Arc, Mutex};
 
 pub struct DataDogClientStub {
     pub should_error: bool,
-    pub messages : Arc<Mutex<Vec<datadog_logs::logger::DataDogLog>>>
+    pub messages: Arc<Mutex<Vec<datadog_logs::logger::DataDogLog>>>,
 }
 
 impl DataDogClientStub {
     pub fn new() -> Self {
         DataDogClientStub {
-            should_error : false,
-            messages : Arc::new(Mutex::new(Vec::new()))
+            should_error: false,
+            messages: Arc::new(Mutex::new(Vec::new())),
         }
     }
 }
