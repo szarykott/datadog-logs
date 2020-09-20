@@ -5,7 +5,10 @@ use crate::logger::DataDogLog;
 use std::io::ErrorKind;
 use std::io::{Write, Read};
 use std::net::TcpStream;
-use native_tls::{TlsConnector, TlsStream};
+use rustls;
+use webpki;
+use webpki_roots;
+use std::sync::Arc;
 
 /// Datadog network client using TCP protocol directly
 ///
@@ -20,7 +23,7 @@ pub struct TcpDataDogClient {
 }
 
 enum Connection {
-    Encrypted(TlsStream<TcpStream>),
+    Encrypted(rustls::StreamOwned<rustls::ClientSession, std::net::TcpStream>),
     Unencrypted(TcpStream)
 }
 
@@ -64,12 +67,7 @@ impl DataDogClient for TcpDataDogClient {
 
     fn send(&mut self, messages: &[DataDogLog]) -> Result<(), DataDogLoggerError> {
         // Fill buffer
-        self.buffer.clear();
-        self.buffer.extend_from_slice(self.api_key.as_bytes());
-        self.buffer.extend_from_slice(b" ");
-        self.buffer.extend_from_slice(&serde_json::to_vec(&messages)?);
-
-        println!("{}", std::str::from_utf8(&self.buffer).unwrap());
+        fill_buffer(&mut self.buffer, &self.api_key, &messages)?;
 
         // Send the message
         let mut num_retries: u8 = 0;
@@ -80,11 +78,20 @@ impl DataDogClient for TcpDataDogClient {
                 .and(self.tcp_stream.flush())
             {
                 Ok(_) =>  {
+
                     let mut rec = String::new();
                     self.tcp_stream.read_to_string(&mut rec).unwrap();
                     println!("{}", rec);
                     println!("After print");
-                    break Ok(())
+
+                    // if let Connection::Encrypted(ref mut tls) = self.tcp_stream {
+                    //     if !tls.sess.is_early_data_accepted() {
+                    //         println!("Early data accepted : false");
+                    //         fill_buffer(&mut self.buffer, &self.api_key, &messages)?;
+                    //         continue;
+                    //     }
+                    // }
+                    return Ok(())
                 },
                 Err(e) => {
                     if num_retries < 3 && should_try_reconnect(e.kind()) {
@@ -99,6 +106,14 @@ impl DataDogClient for TcpDataDogClient {
     }
 }
 
+fn fill_buffer(buffer : &mut Vec<u8>, apikey : &str, messages : &[DataDogLog]) -> Result<(), DataDogLoggerError> {
+    buffer.clear();
+    buffer.extend_from_slice(apikey.as_bytes());
+    buffer.extend_from_slice(b" ");
+    buffer.extend_from_slice(&serde_json::to_vec(&messages)?);
+    Ok(())
+}
+
 fn connect(tcp_config : &DataDogTcpConfig) -> Result<Connection, DataDogLoggerError> {
     let address = if tcp_config.use_tls {
         format!("{}:{}", tcp_config.domain, tcp_config.tls_port)
@@ -108,14 +123,17 @@ fn connect(tcp_config : &DataDogTcpConfig) -> Result<Connection, DataDogLoggerEr
 
     println!("{}", address);
 
-    let tcp_stream = TcpStream::connect(address)?;
+    let sock = TcpStream::connect(address)?;
 
     let connection = if tcp_config.use_tls {
-        let connector = TlsConnector::new().unwrap();
-        let tls_tcp_stream = connector.connect(tcp_config.domain.as_str(), tcp_stream).unwrap();
-        Connection::Encrypted(tls_tcp_stream)
+        let mut config = rustls::ClientConfig::new();
+        config.root_store.add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS);
+        let dns_name = webpki::DNSNameRef::try_from_ascii_str(tcp_config.domain.as_str()).unwrap();
+        let sess = rustls::ClientSession::new(&Arc::new(config), dns_name);
+        sock.set_nodelay(true)?;
+        Connection::Encrypted(rustls::StreamOwned::new(sess, sock))
     } else {
-        Connection::Unencrypted(tcp_stream)
+        Connection::Unencrypted(sock)
     };
 
     Ok(connection)
