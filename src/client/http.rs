@@ -1,10 +1,12 @@
-use super::DataDogClient;
+use super::{AsyncDataDogClient, DataDogClient};
 use crate::config::DataDogConfig;
 use crate::error::DataDogLoggerError;
 use crate::logger::DataDogLog;
+use async_trait::async_trait;
 use url::Url;
 
 /// Datadog network client using HTTP protocol
+#[derive(Debug)]
 pub struct HttpDataDogClient {
     datadog_url: Url,
     api_key: String,
@@ -40,5 +42,12 @@ impl DataDogClient for HttpDataDogClient {
         } else {
             Ok(())
         }
+    }
+}
+
+#[async_trait]
+impl AsyncDataDogClient for HttpDataDogClient {
+    async fn send_async(&mut self, _messages: &[DataDogLog]) -> Result<(), DataDogLoggerError> {
+        todo!()
     }
 }

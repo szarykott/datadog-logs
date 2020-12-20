@@ -1,16 +1,20 @@
-use datadog_logs::{client::DataDogClient, error::DataDogLoggerError};
-use std::sync::{Arc, Mutex};
+use async_trait::async_trait;
+use datadog_logs::{
+    client::{AsyncDataDogClient, DataDogClient},
+    error::DataDogLoggerError,
+};
+use flume::Sender;
 
 pub struct DataDogClientStub {
     pub should_error: bool,
-    pub messages: Arc<Mutex<Vec<datadog_logs::logger::DataDogLog>>>,
+    sender: Sender<datadog_logs::logger::DataDogLog>,
 }
 
 impl DataDogClientStub {
-    pub fn new() -> Self {
+    pub fn new(sender: Sender<datadog_logs::logger::DataDogLog>) -> Self {
         DataDogClientStub {
             should_error: false,
-            messages: Arc::new(Mutex::new(Vec::new())),
+            sender,
         }
     }
 }
@@ -25,13 +29,34 @@ impl DataDogClient for DataDogClientStub {
                 "Succesfull error inside DataDogClientStub".into(),
             ))
         } else {
-            match self.messages.lock() {
-                Ok(mut messageslock) => {
-                    messageslock.extend_from_slice(messages);
-                }
-                Err(e) => {
-                    panic!("Mutex error : {}", e);
-                }
+            for message in messages {
+                self.sender.send(message.clone()).unwrap_or_default();
+            }
+            Ok(())
+        }
+    }
+}
+
+#[async_trait]
+impl AsyncDataDogClient for DataDogClientStub {
+    async fn send_async(
+        &mut self,
+        messages: &[datadog_logs::logger::DataDogLog],
+    ) -> Result<(), DataDogLoggerError> {
+        // pretend it took some time
+        println!("Before wait in client");
+        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        println!("After wait in client");
+        if self.should_error {
+            Err(DataDogLoggerError::OtherError(
+                "Succesfull error inside DataDogClientStub".into(),
+            ))
+        } else {
+            for message in messages {
+                self.sender
+                    .send_async(message.clone())
+                    .await
+                    .unwrap_or_default();
             }
             Ok(())
         }

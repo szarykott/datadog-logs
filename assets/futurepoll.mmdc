@@ -1,0 +1,31 @@
+graph TB
+%% nodes
+    Start[`poll_next` called]
+    StreamStatus{Stream status?} 
+    Store[Store message]
+    IsLimitReached{Storage limit reached?}
+    Send[Send all messages]
+    SendFin[Send all messages]
+    StorageAny{Any messages in storage?}
+    StorageAnyFin{Any messages in storage?}
+    RegWakerSend[Poll `send_async`]
+    RegWakerStream[Poll peek next element]
+    Ready[Complete stream]
+%% transitions
+    Start --> StreamStatus
+    StreamStatus -->|"Ok(msg)"|Store
+    StreamStatus -->|Empty|StorageAny
+    StreamStatus -->|Disconnected|StorageAnyFin
+%% ok path
+    Store --> IsLimitReached
+    IsLimitReached -->|Yes|Send
+    IsLimitReached -->|No|StreamStatus
+%% empty path
+    StorageAny -->|Yes|Send
+    StorageAny -->|No|RegWakerStream
+%% disconnected path
+    StorageAnyFin -->|No|Ready
+    StorageAnyFin -->|Yes|SendFin
+    SendFin --> Ready
+%% shared
+    Send --> RegWakerSend

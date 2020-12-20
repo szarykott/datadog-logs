@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 /// Holds information needed to pass to DataDog
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DataDogLog {
     /// Message of the log
     pub message: String,

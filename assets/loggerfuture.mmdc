@@ -1,0 +1,22 @@
+stateDiagram-v2
+%% states 
+    sd : Sending
+    ac : Accumulating
+    fn : Finalizing
+%% transitions
+    [*] --> ac
+    ac --> sd : No message available or storage limit reached
+    ac --> ac : New message available
+    ac --> fn : Stream disconnected
+    sd --> ac : Send initiated
+    fn --> [*]
+%%notes
+    note left of sd
+        `send_async` completion will wake future up.
+    end note
+    note right of ac
+        New log will wake future up.
+    end note
+    note left of fn
+        This is the state after which future will return Ready
+    end note

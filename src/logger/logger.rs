@@ -1,79 +1,32 @@
-use log::*;
-use std::fmt::Display;
-use std::ops::Drop;
-use std::sync::mpsc::{sync_channel, SyncSender, TryRecvError};
-use std::thread;
+#[cfg(feature = "nonblocking")]
+use super::future::LoggerFuture;
+use super::{level::DataDogLogLevel, log::DataDogLog};
+use crate::{
+    client::{AsyncDataDogClient, DataDogClient},
+    config::DataDogConfig,
+    error::DataDogLoggerError,
+};
+use flume::{bounded, Receiver, Sender, TryRecvError};
+#[cfg(feature = "nonblocking")]
+use futures::Stream;
+use std::{fmt::Display, ops::Drop, thread};
 
-use super::level::DataDogLogLevel;
-use super::log::DataDogLog;
-use crate::client::DataDogClient;
-use crate::config::DataDogConfig;
-use crate::error::DataDogLoggerError;
-use crate::statics::CRATE_NAME;
-
-/// Logger that logs directly to DataDog via HTTP(S) or TCP
+#[derive(Debug)]
+/// Logger that logs directly to DataDog via HTTP(S)
 pub struct DataDogLogger {
     config: DataDogConfig,
-    sender: Option<SyncSender<DataDogLog>>,
+    sender: Option<Sender<DataDogLog>>,
     logger_handle: Option<thread::JoinHandle<()>>,
 }
 
 impl DataDogLogger {
-    /// Creates new DataDogLogger instance
-    pub fn new<T>(mut client: T, config: DataDogConfig) -> Result<Self, DataDogLoggerError>
+    /// Creates new blocking DataDogLogger instance
+    pub fn blocking<T>(client: T, config: DataDogConfig) -> Result<Self, DataDogLoggerError>
     where
         T: DataDogClient + Send + 'static,
     {
-        let (sender, receiver) = sync_channel::<DataDogLog>(config.messages_channel_capacity);
-        let self_log_enabled = config.enable_self_log;
-
-        let logger_handle = thread::spawn(move || {
-            trace!(
-                target: CRATE_NAME,
-                "Datadog logger thread starting to ingest messages."
-            );
-
-            let mut messages: Vec<DataDogLog> = Vec::new();
-
-            loop {
-                match receiver.try_recv() {
-                    Ok(msg) => {
-                        messages.push(msg);
-                        if self_log_enabled {
-                            trace!(
-                                target: CRATE_NAME,
-                                "Logger thread pushed new message to batch."
-                            );
-                        }
-                    }
-                    Err(TryRecvError::Disconnected) => {
-                        DataDogLogger::send_with_self_log(&mut client, self_log_enabled, &messages);
-                        if self_log_enabled {
-                            trace!(
-                                target: CRATE_NAME,
-                                "Logger thread sent batch of messages after channel disconnect."
-                            );
-                        }
-                        break;
-                    }
-                    Err(TryRecvError::Empty) => {
-                        DataDogLogger::send_with_self_log(&mut client, self_log_enabled, &messages);
-                        messages.clear();
-                        if self_log_enabled {
-                            trace!(target: CRATE_NAME, "Logger thread sent batch of messages after emptying the channel. About to block on channel.");
-                        }
-                        if let Ok(msg) = receiver.recv() {
-                            messages.push(msg);
-                        }
-                    }
-                };
-            }
-
-            trace!(
-                target: CRATE_NAME,
-                "Datadog logger thread stopping to ingest messages."
-            );
-        });
+        let (sender, receiver) = bounded::<DataDogLog>(config.messages_channel_capacity);
+        let logger_handle = thread::spawn(move || run_blocking_logger(client, receiver));
 
         Ok(DataDogLogger {
             config,
@@ -82,33 +35,28 @@ impl DataDogLogger {
         })
     }
 
-    fn send_with_self_log<ClientType: DataDogClient>(
-        client: &mut ClientType,
-        self_log_enabled: bool,
-        messages: &[DataDogLog],
-    ) {
-        match client.send(&messages) {
-            Ok(_) => {
-                if self_log_enabled {
-                    trace!(
-                        target: CRATE_NAME,
-                        "Client succesfully sent messages to Datadog."
-                    );
-                }
-            }
-            Err(e) => {
-                if self_log_enabled {
-                    trace!(
-                        target: CRATE_NAME,
-                        "Client failed to send messages to Datadog. Error : {}",
-                        e
-                    );
-                }
-            }
-        }
+    /// Creates new non-blocking DataDogLogger instance
+    #[cfg(feature = "nonblocking")]
+    pub fn non_blocking<T>(
+        client: T,
+        config: DataDogConfig,
+    ) -> (Self, impl Stream<Item = Option<String>>)
+    where
+        T: AsyncDataDogClient + Unpin,
+    {
+        let (sender, receiver) = bounded::<DataDogLog>(config.messages_channel_capacity);
+        let logger_future = LoggerFuture::new(client, receiver);
+
+        let logger = DataDogLogger {
+            config,
+            sender: Some(sender),
+            logger_handle: None,
+        };
+
+        (logger, logger_future)
     }
 
-    /// Sends logs to DataDog
+    /// Sends log to DataDog
     pub fn log<T: Display>(&self, message: T, level: DataDogLogLevel) {
         let log = DataDogLog {
             message: message.to_string(),
@@ -124,15 +72,42 @@ impl DataDogLogger {
                 Ok(()) => {}
                 Err(e) => {
                     if self.config.enable_self_log {
-                        trace!(
-                            target: CRATE_NAME,
-                            "Failed to send message to logger thread. Error : {}",
-                            e
-                        );
+                        println!("{}", e);
                     }
                 }
             }
         }
+    }
+}
+
+fn run_blocking_logger<T: DataDogClient>(mut client: T, receiver: Receiver<DataDogLog>) {
+    fn send<T: DataDogClient>(client: &mut T, messages: &[DataDogLog]) {
+        match client.send(&messages) {
+            Ok(_) => {}
+            Err(e) => {}
+        }
+    }
+
+    let mut messages: Vec<DataDogLog> = Vec::new();
+
+    loop {
+        match receiver.try_recv() {
+            Ok(msg) => {
+                messages.push(msg);
+            }
+            Err(TryRecvError::Disconnected) => {
+                send(&mut client, &messages);
+                break;
+            }
+            Err(TryRecvError::Empty) => {
+                send(&mut client, &messages);
+                messages.clear();
+                // blocking explicitly not to spin CPU
+                if let Ok(msg) = receiver.recv() {
+                    messages.push(msg);
+                }
+            }
+        };
     }
 }
 
@@ -145,7 +120,5 @@ impl Drop for DataDogLogger {
         if let Some(handle) = self.logger_handle.take() {
             handle.join().unwrap_or_default();
         }
-
-        trace!(target: CRATE_NAME, "Datadog logger is stopping");
     }
 }

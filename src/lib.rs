@@ -19,7 +19,7 @@
 //! Enables console logging of events inside DataDogLogger itself for debugging purposes.
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
-
+#![warn(missing_debug_implementations)]
 /// Datadog network clients
 pub mod client;
 /// Logger configuration
@@ -30,4 +30,3 @@ pub mod error;
 mod log_integration;
 /// Contains DataDog logger implementation
 pub mod logger;
-mod statics;

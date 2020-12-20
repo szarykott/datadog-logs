@@ -1,3 +1,5 @@
+#[cfg(feature = "nonblocking")]
+mod future;
 mod level;
 mod log;
 mod logger;

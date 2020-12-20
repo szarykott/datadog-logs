@@ -1,22 +1,19 @@
 # Datadog Logs
 
-This simple crate can be used to log to DataDog directly via HTTP(S) or TCP (with TLS).
+## What
+`datadog-logs` is a minimalistic crate for logging to DataDog. It does it directly via HTTP(S) using DataDog's public API.
 
-It is as minimal as possible with the idea that logging should not consume time in your application execution path. Therefore it offloads the task of logging to a separate thread.
+## How
+Logger consists of two parts - logging facade that sends messages to dedicated thread or task that batches messages to send to DataDog as presented on sequence diagram below.
 
-As this library is in early stage and to facilitate integration with logging facades such as `log` sending messages to DataDog is done synchronously, but on a dedicated thread in batch fashion.
+![sequence diagram of workflow](./assets/basicseq.png)
 
-### `Log` integration
+Thanks to such a workflow logging should not affect throughput of your application, nor force you to handle errors arising from HTTP. 
 
-Crate is already integrated with `log` crate, it is hidden behind `log-integration` feature (enabled by default).
+## Why
 
-### Self logging
+Author found no existing library that could be used for this purpose.
 
-To enable self logging, just enable feature `self-log`. Library will then log some trace information to stderr.
+## Feature flags
 
-### Future features
-
-Contributions welcome:
-
-* try to integrate logger with async executors, so that act of logging is no longer synchronous
-* use TCP protocol with TLS instead of HTTPS
+* `log-integration` - enables integration with `log` crate (enabled by default)
