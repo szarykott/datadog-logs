@@ -3,7 +3,6 @@ use datadog_logs::{
     config::DataDogConfig,
     logger::{DataDogLogLevel, DataDogLogger},
 };
-use futures::StreamExt;
 
 #[test]
 fn test_logger_stops_http() {
@@ -21,13 +20,9 @@ fn test_logger_stops_http() {
 async fn test_async_logger_stops_http() {
     let config = DataDogConfig::default();
     let client = HttpDataDogClient::new(&config).unwrap();
-    let (logger, mut stream) = DataDogLogger::non_blocking::<HttpDataDogClient>(client, config);
+    let (logger, future) = DataDogLogger::non_blocking_cold::<HttpDataDogClient>(client, config);
 
-    tokio::spawn(async move {
-        while let Some(e) = stream.next().await {
-            println!("{:?}", e);
-        }
-    });
+    tokio::spawn(future);
 
     logger.log("message", DataDogLogLevel::Alert);
 

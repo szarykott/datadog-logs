@@ -30,9 +30,10 @@ pub struct DataDogConfig {
     #[serde(default)]
     pub tcp_config: DataDogTcpConfig,
     /// Capacity of channel connecting logger thread with other threads.
-    /// If not set explicitly, it defaults to 256 messages.
+    /// If not set explicitly, it defaults to 10 000 messages.
+    /// If explicitly set to `None`, channel will be unbounded.
     #[serde(default)]
-    pub messages_channel_capacity: usize,
+    pub messages_channel_capacity: Option<usize>,
     /// Enables or disables self logging. Disabled by default.
     #[serde(default)]
     pub enable_self_log: bool,
@@ -48,7 +49,7 @@ impl Default for DataDogConfig {
             http_config: Default::default(),
             tcp_config: Default::default(),
             source: "rust".into(),
-            messages_channel_capacity: 256,
+            messages_channel_capacity: Some(10_000),
             enable_self_log: false,
         }
     }

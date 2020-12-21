@@ -1,55 +1,95 @@
+use super::blocking;
 #[cfg(feature = "nonblocking")]
-use super::future::LoggerFuture;
+use super::nonblocking;
 use super::{level::DataDogLogLevel, log::DataDogLog};
 use crate::{
     client::{AsyncDataDogClient, DataDogClient},
     config::DataDogConfig,
     error::DataDogLoggerError,
 };
-use flume::{bounded, Receiver, Sender, TryRecvError};
+use flume::{bounded, unbounded, Receiver, Sender};
 #[cfg(feature = "nonblocking")]
-use futures::Stream;
+use futures::Future;
 use std::{fmt::Display, ops::Drop, thread};
 
 #[derive(Debug)]
 /// Logger that logs directly to DataDog via HTTP(S)
 pub struct DataDogLogger {
     config: DataDogConfig,
-    sender: Option<Sender<DataDogLog>>,
+    logsender: Option<Sender<DataDogLog>>,
+    selflogrv: Option<Receiver<String>>,
+    selflogsd: Option<Sender<String>>,
     logger_handle: Option<thread::JoinHandle<()>>,
 }
 
 impl DataDogLogger {
+    /// Exposes self log of the logger.
+    ///
+    /// Contains diagnostic messages with details of errors occuring inside logger.
+    /// It will be `None`, unless `enable_self_log` in [`DataDogConfig`](crate::config::DataDogConfig) is set to `true`.
+    pub fn selflog(&self) -> &Option<Receiver<String>> {
+        &self.selflogrv
+    }
+
     /// Creates new blocking DataDogLogger instance
     pub fn blocking<T>(client: T, config: DataDogConfig) -> Result<Self, DataDogLoggerError>
     where
         T: DataDogClient + Send + 'static,
     {
-        let (sender, receiver) = bounded::<DataDogLog>(config.messages_channel_capacity);
-        let logger_handle = thread::spawn(move || run_blocking_logger(client, receiver));
+        let (slsender, slreceiver) = if config.enable_self_log {
+            let (s, r) = bounded::<String>(100);
+            (Some(s), Some(r))
+        } else {
+            (None, None)
+        };
+        let slogsender_clone = slsender.clone();
+        let (sender, receiver) = match config.messages_channel_capacity {
+            Some(capacity) => bounded(capacity),
+            None => unbounded(),
+        };
+
+        let logger_handle =
+            thread::spawn(move || blocking::logger_thread(client, receiver, slsender));
 
         Ok(DataDogLogger {
             config,
-            sender: Some(sender),
+            logsender: Some(sender),
+            selflogrv: slreceiver,
+            selflogsd: slogsender_clone,
             logger_handle: Some(logger_handle),
         })
     }
 
-    /// Creates new non-blocking DataDogLogger instance
+    /// Creates new non-blocking `DataDogLogger` instance
+    ///
+    /// It returns a `Future` that needs to be spawned for logger to work.
+    /// Although a little inconvinient, it is completely executor agnostic.
     #[cfg(feature = "nonblocking")]
-    pub fn non_blocking<T>(
+    pub fn non_blocking_cold<T>(
         client: T,
         config: DataDogConfig,
-    ) -> (Self, impl Stream<Item = Option<String>>)
+    ) -> (Self, impl Future<Output = ()>)
     where
-        T: AsyncDataDogClient + Unpin,
+        T: AsyncDataDogClient,
     {
-        let (sender, receiver) = bounded::<DataDogLog>(config.messages_channel_capacity);
-        let logger_future = LoggerFuture::new(client, receiver);
+        let (slsender, slreceiver) = if config.enable_self_log {
+            let (s, r) = bounded::<String>(100);
+            (Some(s), Some(r))
+        } else {
+            (None, None)
+        };
+        let slogsender_clone = slsender.clone();
+        let (logsender, logreceiver) = match config.messages_channel_capacity {
+            Some(capacity) => bounded(capacity),
+            None => unbounded(),
+        };
+        let logger_future = nonblocking::logger_future(client, logreceiver, slsender);
 
         let logger = DataDogLogger {
             config,
-            sender: Some(sender),
+            logsender: Some(logsender),
+            selflogrv: slreceiver,
+            selflogsd: slogsender_clone,
             logger_handle: None,
         };
 
@@ -67,12 +107,12 @@ impl DataDogLogger {
             level: level.to_string(),
         };
 
-        if let Some(ref sender) = self.sender {
+        if let Some(ref sender) = self.logsender {
             match sender.try_send(log) {
                 Ok(()) => {}
                 Err(e) => {
-                    if self.config.enable_self_log {
-                        println!("{}", e);
+                    if let Some(ref selflog) = self.selflogsd {
+                        selflog.try_send(e.to_string()).unwrap_or_default();
                     }
                 }
             }
@@ -80,41 +120,10 @@ impl DataDogLogger {
     }
 }
 
-fn run_blocking_logger<T: DataDogClient>(mut client: T, receiver: Receiver<DataDogLog>) {
-    fn send<T: DataDogClient>(client: &mut T, messages: &[DataDogLog]) {
-        match client.send(&messages) {
-            Ok(_) => {}
-            Err(e) => {}
-        }
-    }
-
-    let mut messages: Vec<DataDogLog> = Vec::new();
-
-    loop {
-        match receiver.try_recv() {
-            Ok(msg) => {
-                messages.push(msg);
-            }
-            Err(TryRecvError::Disconnected) => {
-                send(&mut client, &messages);
-                break;
-            }
-            Err(TryRecvError::Empty) => {
-                send(&mut client, &messages);
-                messages.clear();
-                // blocking explicitly not to spin CPU
-                if let Ok(msg) = receiver.recv() {
-                    messages.push(msg);
-                }
-            }
-        };
-    }
-}
-
 impl Drop for DataDogLogger {
     fn drop(&mut self) {
         // drop sender to allow logger thread to close
-        std::mem::drop(self.sender.take());
+        std::mem::drop(self.logsender.take());
 
         // wait for logger thread to finish to ensure all messages are flushed
         if let Some(handle) = self.logger_handle.take() {

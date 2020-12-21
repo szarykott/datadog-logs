@@ -24,23 +24,19 @@ fn test_simple_blocking_logger_run() {
     assert_eq!(1, messages.len());
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 1)]
-async fn test() {
+#[tokio::test]
+async fn test_simple_nonblocking_logger_run() {
     let (sender, receiver) = unbounded();
-    let (logger, mut stream) = DataDogLogger::non_blocking(
+    let (logger, future) = DataDogLogger::non_blocking_cold(
         utils::DataDogClientStub::new(sender),
         DataDogConfig::default(),
     );
 
     println!("Before spawning future!");
 
-    tokio::spawn(async move {
-        println!("Inside spawned future!");
-        while let Some(e) = stream.next().await {
-            println!("{:?}", e);
-        }
-        println!("Task with polling stream terminated!")
-    });
+    tokio::spawn(future);
+
+    println!("After spawning future!");
 
     logger.log("message", DataDogLogLevel::Alert);
 
