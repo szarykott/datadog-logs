@@ -62,6 +62,19 @@ impl DataDogLogger {
 
     /// Creates new non-blocking `DataDogLogger` instance
     ///
+    /// Internally spawns logger future to `tokio` runtime.
+    #[cfg(feature = "with-tokio")]
+    pub fn non_blocking_with_tokio<T>(client: T, config: DataDogConfig) -> Self
+    where
+        T: AsyncDataDogClient + Send + 'static,
+    {
+        let (logger, future) = Self::non_blocking_cold(client, config);
+        tokio::spawn(future);
+        logger
+    }
+
+    /// Creates new non-blocking `DataDogLogger` instance
+    ///
     /// It returns a `Future` that needs to be spawned for logger to work.
     /// Although a little inconvinient, it is completely executor agnostic.
     #[cfg(feature = "nonblocking")]
@@ -109,8 +122,11 @@ impl DataDogLogger {
 
         if let Some(ref sender) = self.logsender {
             match sender.try_send(log) {
-                Ok(()) => {}
+                Ok(()) => {
+                    println!("logger sent message");
+                }
                 Err(e) => {
+                    println!("logger failed to send message");
                     if let Some(ref selflog) = self.selflogsd {
                         selflog.try_send(e.to_string()).unwrap_or_default();
                     }

@@ -20,9 +20,9 @@ version = "0.2.0"
 [features]
 # default set of dependencies
 default = ["log-integration"]
-# provides integration with log crate
 log-integration = ["log"]
 nonblocking = ["futures", "async-trait"]
+with-tokio = ["tokio", "nonblocking"]
 
 [dependencies]
 # non optional
@@ -35,6 +35,7 @@ url = {version = "2.1"}
 async-trait = {version = "0.1.42", optional = true}
 futures = {version = "0.3.8", optional = true}
 log = {version = "0.4", features = ["std"], optional = true}
+tokio = {version = "0.3.5", features = ["rt"], optional = true}
 
 [dev-dependencies]
 tokio = {version = "0.3.5", features = ["full"]}

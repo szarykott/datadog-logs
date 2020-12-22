@@ -44,9 +44,7 @@ impl AsyncDataDogClient for DataDogClientStub {
         messages: &[datadog_logs::logger::DataDogLog],
     ) -> Result<(), DataDogLoggerError> {
         // pretend it took some time
-        println!("Before wait in client");
-        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
-        println!("After wait in client");
+        tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
         if self.should_error {
             Err(DataDogLoggerError::OtherError(
                 "Succesfull error inside DataDogClientStub".into(),
