@@ -1,22 +1,20 @@
-//! Simple crate to send logs directly to DataDog via HTTP or TCP.
+//! # About
 //!
-//! It offloads the job of sending logs to DataDog to a separate thread.
-//! Therefore it is easy to integrate it with some crates providing synchronous logging API like `log`.
+//! `datadog-logs` is a DataDog logs API client with `log` integration.
 //!
-//! # Feature flags
-//! ### full
-//! Enables all features except for `self-log` that needs to be enabled separately.
+//! Provides support for HTTP DataDog logs ingestion API.
+//! Supports blocking and nonblocking HTTP(S) clients activated by feature flags.
 //!
-//! ### http
-//! Enables optional HTTP logger.
-//! It is disabled by default not to bring unnecessary dependencies that increase compilation time.
+//! Logger is easily configurable with extensive `DataDogConfig` that can be deserialized directly from file thanks to `serde`.
 //!
-//! ### log-integration
-//! Enables optional integration with `log` crate.
-//! To set DataDogLogger as the `log` logger it is enough to call function `init_with_log`.
+//! It offloads the job of sending logs to DataDog to a separate thread (blocking logger) or task (nonblocking logger).
 //!
-//! ### self-log
-//! Enables console logging of events inside DataDogLogger itself for debugging purposes.
+//! # Examples
+//!
+//! ## Using with `log` crate
+//!
+//! TODO: Add example
+//!
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
 #![warn(missing_debug_implementations)]
