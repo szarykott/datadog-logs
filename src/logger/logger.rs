@@ -5,7 +5,6 @@ use super::{level::DataDogLogLevel, log::DataDogLog};
 use crate::{
     client::{AsyncDataDogClient, DataDogClient},
     config::DataDogConfig,
-    error::DataDogLoggerError,
 };
 use flume::{bounded, unbounded, Receiver, Sender};
 #[cfg(feature = "nonblocking")]
@@ -32,7 +31,11 @@ impl DataDogLogger {
     }
 
     /// Creates new blocking DataDogLogger instance
-    pub fn blocking<T>(client: T, config: DataDogConfig) -> Result<Self, DataDogLoggerError>
+    ///
+    /// What it means is that no executor is used to host DataDog network client. A new thread is started instead.
+    /// It receives messages to log and sends them in batches in blocking fashion.
+    /// As this is a separate thread, calling [`log`](Self::log) does not imply any IO operation, thus is quite fast.
+    pub fn blocking<T>(client: T, config: DataDogConfig) -> Self
     where
         T: DataDogClient + Send + 'static,
     {
@@ -51,18 +54,21 @@ impl DataDogLogger {
         let logger_handle =
             thread::spawn(move || blocking::logger_thread(client, receiver, slsender));
 
-        Ok(DataDogLogger {
+        DataDogLogger {
             config,
             logsender: Some(sender),
             selflogrv: slreceiver,
             selflogsd: slogsender_clone,
             logger_handle: Some(logger_handle),
-        })
+        }
     }
 
     /// Creates new non-blocking `DataDogLogger` instance
     ///
     /// Internally spawns logger future to `tokio` runtime.
+    ///
+    /// It is equivalent to calling [`non_blocking_cold`](Self::non_blocking_cold) and spawning future to Tokio runtime.
+    /// Thus it is only a convinience function.
     #[cfg(feature = "with-tokio")]
     pub fn non_blocking_with_tokio<T>(client: T, config: DataDogConfig) -> Self
     where
@@ -75,7 +81,10 @@ impl DataDogLogger {
 
     /// Creates new non-blocking `DataDogLogger` instance
     ///
-    /// It returns a `Future` that needs to be spawned for logger to work.
+    /// What it means is that logger requires executor to run. This executor will host a task that will receive messages to log.
+    /// It will log them using non blocking (asynchronous) implementation of network client.
+    ///
+    /// It returns a `Future` that needs to be spawned for logger to work. This `Future` is a task that is responsible for sending messages.
     /// Although a little inconvinient, it is completely executor agnostic.
     #[cfg(feature = "nonblocking")]
     pub fn non_blocking_cold<T>(
@@ -109,7 +118,10 @@ impl DataDogLogger {
         (logger, logger_future)
     }
 
-    /// Sends log to DataDog
+    /// Sends log to DataDog thread or task.
+    ///
+    /// This function does not invoke any IO operation by itself. Instead it sends messages to logger thread or task using channels.
+    /// Therefore it is quite lightweight.
     pub fn log<T: Display>(&self, message: T, level: DataDogLogLevel) {
         let log = DataDogLog {
             message: message.to_string(),
@@ -123,10 +135,9 @@ impl DataDogLogger {
         if let Some(ref sender) = self.logsender {
             match sender.try_send(log) {
                 Ok(()) => {
-                    println!("logger sent message");
+                    // nothing
                 }
                 Err(e) => {
-                    println!("logger failed to send message");
                     if let Some(ref selflog) = self.selflogsd {
                         selflog.try_send(e.to_string()).unwrap_or_default();
                     }

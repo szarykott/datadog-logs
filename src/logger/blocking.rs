@@ -2,7 +2,7 @@ use super::log::DataDogLog;
 use crate::client::DataDogClient;
 use flume::{Receiver, Sender, TryRecvError};
 
-pub fn logger_thread<T: DataDogClient>(
+pub(crate) fn logger_thread<T: DataDogClient>(
     mut client: T,
     logs: Receiver<DataDogLog>,
     mut selflog: Option<Sender<String>>,

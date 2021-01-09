@@ -6,7 +6,7 @@ use crate::error::DataDogLoggerError;
 use crate::logger::DataDogLog;
 use async_trait::async_trait;
 
-/// Trait describing generic Datadog network client
+/// Describes blocking Datadog network client
 pub trait DataDogClient {
     /// Sends collection of messages to DataDog
     fn send(&mut self, messages: &[DataDogLog]) -> Result<(), DataDogLoggerError>;

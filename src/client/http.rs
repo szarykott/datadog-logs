@@ -48,6 +48,7 @@ impl DataDogClient for HttpDataDogClient {
 #[async_trait]
 impl AsyncDataDogClient for HttpDataDogClient {
     async fn send_async(&mut self, _messages: &[DataDogLog]) -> Result<(), DataDogLoggerError> {
+        // TODO: implementation
         todo!()
     }
 }

@@ -1,12 +1,12 @@
 use crate::{
-    client::DataDogClient,
+    client::{AsyncDataDogClient, DataDogClient},
     config::DataDogConfig,
     error::DataDogLoggerError,
     logger::{DataDogLogLevel, DataDogLogger},
 };
+use futures::Future;
 use log::{LevelFilter, Log, Metadata, Record};
 
-/// Requires `log` feature enabled
 impl Log for DataDogLogger {
     fn enabled(&self, _metadata: &Metadata) -> bool {
         true
@@ -26,11 +26,12 @@ impl Log for DataDogLogger {
     fn flush(&self) {}
 }
 
+// TODO: move it to main `impl` block
 impl DataDogLogger {
-    /// Initializes DataDogLogger with `log` crate
+    /// Initializes blocking DataDogLogger with `log` crate.
     ///
-    /// Requires `log` feature enabled
-    pub fn init_with_log<T>(
+    /// Requires relevant feature flag activated.
+    pub fn set_blocking_logger<T>(
         client: T,
         config: DataDogConfig,
         level: LevelFilter,
@@ -38,9 +39,28 @@ impl DataDogLogger {
     where
         T: DataDogClient + Send + 'static,
     {
-        let logger = DataDogLogger::blocking(client, config)?;
+        let logger = DataDogLogger::blocking(client, config);
         log::set_boxed_logger(Box::new(logger))?;
         log::set_max_level(level);
         Ok(())
+    }
+
+    /// Initializes nonblocking DataDogLogger with `log` crate.
+    ///
+    /// To make logger work, returned future has to be spawned to executor.
+    ///
+    /// Requires relevant feature flag activated.
+    pub fn set_nonblocking_logger<T>(
+        client: T,
+        config: DataDogConfig,
+        level: LevelFilter,
+    ) -> Result<Box<dyn Future<Output = ()>>, DataDogLoggerError>
+    where
+        T: AsyncDataDogClient + Send + 'static,
+    {
+        let (logger, future) = DataDogLogger::non_blocking_cold(client, config);
+        log::set_boxed_logger(Box::new(logger))?;
+        log::set_max_level(level);
+        Ok(Box::new(future))
     }
 }

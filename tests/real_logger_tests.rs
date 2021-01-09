@@ -8,7 +8,7 @@ use datadog_logs::{
 fn test_logger_stops_http() {
     let config = DataDogConfig::default();
     let client = HttpDataDogClient::new(&config).unwrap();
-    let logger = DataDogLogger::blocking::<HttpDataDogClient>(client, config).unwrap();
+    let logger = DataDogLogger::blocking::<HttpDataDogClient>(client, config);
 
     logger.log("message", DataDogLogLevel::Alert);
 

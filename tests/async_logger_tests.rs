@@ -79,20 +79,17 @@ async fn test_messages_are_streamed() {
         loop {
             match receiver.recv_timeout(std::time::Duration::from_secs(1)) {
                 Ok(_) => {
-                    println!("ok");
                     count += 1;
                     if count % 10 == 0 {
                         break;
                     }
                 }
                 Err(RecvTimeoutError::Disconnected) => {
-                    println!("disconnected");
                     while let Ok(msg) = selflog.recv() {
                         println!("{}", msg);
                     }
                 }
                 Err(RecvTimeoutError::Timeout) => {
-                    println!("timeout");
                     while let Ok(msg) = selflog.recv() {
                         println!("{}", msg);
                     }
