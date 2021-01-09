@@ -19,6 +19,9 @@ pub enum DataDogLoggerError {
     /// Error that can happen during DataDogLogger initialization with log
     #[cfg(feature = "log-integration")]
     LogIntegrationError(log::SetLoggerError),
+    /// Http error in non blocking client
+    #[cfg(feature = "nonblocking")]
+    AsyncHttpError(reqwest::Error),
 }
 
 impl Display for DataDogLoggerError {
@@ -32,6 +35,8 @@ impl Display for DataDogLoggerError {
             DataDogLoggerError::HttpError(e) => write!(f, "{}", e),
             #[cfg(feature = "log-integration")]
             DataDogLoggerError::LogIntegrationError(e) => write!(f, "{}", e),
+            #[cfg(feature = "nonblocking")]
+            DataDogLoggerError::AsyncHttpError(e) => write!(f, "{}", e),
         }
     }
 }
@@ -64,5 +69,12 @@ impl From<attohttpc::Error> for DataDogLoggerError {
 impl From<log::SetLoggerError> for DataDogLoggerError {
     fn from(e: log::SetLoggerError) -> Self {
         DataDogLoggerError::LogIntegrationError(e)
+    }
+}
+
+#[cfg(feature = "nonblocking")]
+impl From<reqwest::Error> for DataDogLoggerError {
+    fn from(e: reqwest::Error) -> Self {
+        DataDogLoggerError::AsyncHttpError(e)
     }
 }

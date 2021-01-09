@@ -3,6 +3,7 @@ use crate::config::DataDogConfig;
 use crate::error::DataDogLoggerError;
 use crate::logger::DataDogLog;
 use async_trait::async_trait;
+use reqwest;
 use url::Url;
 
 /// Datadog network client using HTTP protocol
@@ -47,8 +48,25 @@ impl DataDogClient for HttpDataDogClient {
 
 #[async_trait]
 impl AsyncDataDogClient for HttpDataDogClient {
-    async fn send_async(&mut self, _messages: &[DataDogLog]) -> Result<(), DataDogLoggerError> {
-        // TODO: implementation
-        todo!()
+    async fn send_async(&mut self, messages: &[DataDogLog]) -> Result<(), DataDogLoggerError> {
+        // TODO: test implementation
+        let client = reqwest::Client::new();
+        let response = client
+            .post(self.datadog_url.clone())
+            .header("Content-Type", "application/json")
+            .header("DD-API-KEY", &self.api_key)
+            .json(messages)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            Err(DataDogLoggerError::OtherError(format!(
+                "Datadog response does not indicate success. Status code : {}, Body : {}",
+                response.status(),
+                response.text().await.unwrap_or_default()
+            )))
+        } else {
+            Ok(())
+        }
     }
 }
