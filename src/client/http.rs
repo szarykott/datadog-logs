@@ -49,7 +49,6 @@ impl DataDogClient for HttpDataDogClient {
 #[async_trait]
 impl AsyncDataDogClient for HttpDataDogClient {
     async fn send_async(&mut self, messages: &[DataDogLog]) -> Result<(), DataDogLoggerError> {
-        // TODO: test implementation
         let client = reqwest::Client::new();
         let response = client
             .post(self.datadog_url.clone())

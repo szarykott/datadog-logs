@@ -19,8 +19,6 @@ version = "0.2.0"
 
 [features]
 # default set of dependencies
-default = ["log-integration"]
-log-integration = ["log"]
 nonblocking = ["futures", "async-trait", "reqwest"]
 with-tokio = ["tokio", "nonblocking"]
 
@@ -31,10 +29,10 @@ flume = {version = "0.10.0"}
 serde = {version = "1.0", features = ["derive"]}
 serde_json = {version = "1.0"}
 url = {version = "2.1"}
+log = {version = "0.4", features = ["std"]}
 # optional
 async-trait = {version = "0.1.42", optional = true}
 futures = {version = "0.3.8", optional = true}
-log = {version = "0.4", features = ["std"], optional = true}
 reqwest = {version = "0.11.0", features = ["json"], optional = true}
 tokio = {version = "0.3", features = ["rt"], optional = true}
 

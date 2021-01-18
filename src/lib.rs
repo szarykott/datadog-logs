@@ -24,7 +24,5 @@ pub mod client;
 pub mod config;
 /// Errors
 pub mod error;
-#[cfg(feature = "log-integration")]
-mod log_integration;
 /// DataDog logger implementations
 pub mod logger;
