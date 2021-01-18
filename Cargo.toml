@@ -26,15 +26,15 @@ with-tokio = ["tokio", "nonblocking"]
 # non optional
 attohttpc = {version = "0.15", features = ["tls", "compress"]}
 flume = {version = "0.10.0"}
+log = {version = "0.4", features = ["std"]}
 serde = {version = "1.0", features = ["derive"]}
 serde_json = {version = "1.0"}
 url = {version = "2.1"}
-log = {version = "0.4", features = ["std"]}
 # optional
 async-trait = {version = "0.1.42", optional = true}
 futures = {version = "0.3.8", optional = true}
 reqwest = {version = "0.11.0", features = ["json"], optional = true}
-tokio = {version = "0.3", features = ["rt"], optional = true}
+tokio = {version = "1.0", features = ["rt"], optional = true}
 
 [dev-dependencies]
-tokio = {version = "0.3.5", features = ["full"]}
+tokio = {version = "1.0", features = ["full"]}
