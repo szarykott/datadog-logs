@@ -1,0 +1,25 @@
+{
+  "name": "datadog-logs",
+  "version": "1.0.0",
+  "description": "This simple crate can be used to log to DataDog directly via HTTP(S) or TCP (with TLS).",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/szarykott/datadog-logs.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/szarykott/datadog-logs/issues"
+  },
+  "homepage": "https://github.com/szarykott/datadog-logs#readme",
+  "dependencies": {
+    "@mermaid-js/mermaid-cli": "^8.8.4"
+  }
+}

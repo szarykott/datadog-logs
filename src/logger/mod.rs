@@ -1,9 +1,10 @@
-mod config;
+mod blocking;
 mod level;
+mod log;
 mod logger;
-mod error;
+#[cfg(feature = "nonblocking")]
+mod nonblocking;
 
-pub use config::DataDogConfig;
+pub use self::log::DataDogLog;
 pub use level::DataDogLogLevel;
 pub use logger::DataDogLogger;
-pub use error::DataDogLoggerError;

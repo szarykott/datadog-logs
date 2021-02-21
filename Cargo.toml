@@ -1,27 +1,40 @@
 [package]
-name = "datadog-logs"
-version = "0.1.0"
 authors = ["Radosław Kot <rdkt13@gmail.com>"]
-license = "MIT"
 description = "Simple client library for DataDog logs"
-repository = "https://github.com/szarykott/datadog-logs"
 edition = "2018"
-readme = "README.md"
+exclude = [
+  "tests/*",
+  "generate_assets.sh",
+  "assets/*",
+]
+homepag = "https://github.com/szarykott/datadog-logs"
 keywords = ["logging", "datadog"]
+license = "MIT"
+name = "datadog-logs"
+readme = "README.md"
+repository = "https://github.com/szarykott/datadog-logs"
+version = "0.2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
 # default set of dependencies
-default = ["log-integration"]
-# provides integration with log crate
-log-integration = ["log"]
-# enables logging of errors within logger to console
-self-log = []
+nonblocking = ["futures", "async-trait", "reqwest"]
+with-tokio = ["tokio", "nonblocking"]
 
 [dependencies]
-serde_json = { version = "1.0" }
-serde = { version = "1.0", features = ["derive"] } 
-attohttpc = { version = "0.15", features = ["tls", "compress"] }
-url = { version = "2.1" }
-log = { version = "0.4", features = ["std"], optional = true }
+# non optional
+attohttpc = {version = "0.15", features = ["tls", "compress"]}
+flume = {version = "0.10.0"}
+log = {version = "0.4", features = ["std"]}
+serde = {version = "1.0", features = ["derive"]}
+serde_json = {version = "1.0"}
+url = {version = "2.1"}
+# optional
+async-trait = {version = "0.1.42", optional = true}
+futures = {version = "0.3.8", optional = true}
+reqwest = {version = "0.11.1", default-features = false, features = ["json", "rustls-tls"], optional = true}
+tokio = {version = "1.0", features = ["rt"], optional = true}
+
+[dev-dependencies]
+tokio = {version = "1.0", features = ["full"]}

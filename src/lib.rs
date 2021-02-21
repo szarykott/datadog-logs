@@ -1,16 +1,43 @@
-//! Simple crate to send logs directly to DataDog via HTTP
+//! # About
 //!
-//! It offloads the job of sending logs to DataDog to a separate thread.
-//! Therefore it is easy to integrate it with some crates providing synchronous logging API like `log`.
+//! `datadog-logs` is a DataDog logs API client with `log` integration.
 //!
-//! ## Feature flags
-//! `log-integration` - enables optional integration with `log` crate
+//! Provides support for HTTP DataDog logs ingestion API.
+//! Supports blocking and nonblocking HTTP(S) clients activated by feature flags.
 //!
-//! `self-log` - enables console logging of events inside DataDogLogger itself
+//! Logger is easily configurable with extensive `DataDogConfig` that can be deserialized directly from file thanks to `serde`.
+//!
+//! It offloads the job of sending logs to DataDog to a separate thread (blocking logger) or task (nonblocking logger).
+//!
+//! # Using with `log` crate
+//!
+//!```rust
+//!use datadog_logs::{config::DataDogConfig, logger::DataDogLogger, client::HttpDataDogClient};
+//!use log::*;
+//!
+//!# async fn func() {
+//!let config = DataDogConfig::default();
+//!let client = HttpDataDogClient::new(&config).unwrap();
+//! // there is also a blocking logger available that does not require runtime
+//!let future = DataDogLogger::set_nonblocking_logger(client, config, LevelFilter::Error).unwrap();
+//!
+//! // there is a convinence function available to spawn future to tokio
+//! // however, this design makes it compatible with every runtime without effort
+//!tokio::spawn(future);
+//!
+//! // now you can log
+//!error!("An error occured");
+//!warn!("A warning");
+//!# }
+//!```
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
-
-#[cfg(feature = "log-integration")]
-mod log_integration;
-/// Contains DataDog logger implementation
+#![warn(missing_debug_implementations)]
+/// Datadog network clients
+pub mod client;
+/// Logger configuration
+pub mod config;
+/// Errors
+pub mod error;
+/// DataDog logger implementations
 pub mod logger;

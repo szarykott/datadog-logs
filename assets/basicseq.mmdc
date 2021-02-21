@@ -1,0 +1,14 @@
+sequenceDiagram
+    autonumber
+    participant P as Program
+    participant L as Logger Thread or Future
+    participant D as DataDog
+
+    P ->> L: Log
+    L ->> L: Store log
+    P ->> L: Log
+    L ->> L: Store log
+    P ->> L: Log
+    L ->> L: Store log
+    Note over P,L: Stops sending messages for a while or capacity is reached
+    L ->> D: Send all stored logs in a batch

@@ -1,6 +1,7 @@
 use std::fmt::Display;
 
 /// Logging levels according to SysLog
+#[derive(Debug)]
 pub enum DataDogLogLevel {
     /// Emergency level
     Emergency,
