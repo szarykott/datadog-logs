@@ -9,12 +9,27 @@
 //!
 //! It offloads the job of sending logs to DataDog to a separate thread (blocking logger) or task (nonblocking logger).
 //!
-//! # Examples
+//! # Using with `log` crate
 //!
-//! ## Using with `log` crate
+//!```rust
+//!use datadog_logs::{config::DataDogConfig, logger::DataDogLogger, client::HttpDataDogClient};
+//!use log::*;
 //!
-//! TODO: Add example
+//!# async fn func() {
+//!let config = DataDogConfig::default();
+//!let client = HttpDataDogClient::new(&config).unwrap();
+//! // there is also a blocking logger available that does not require runtime
+//!let future = DataDogLogger::set_nonblocking_logger(client, config, LevelFilter::Error).unwrap();
 //!
+//! // there is a convinence function available to spawn future to tokio
+//! // however, this design makes it compatible with every runtime without effort
+//!tokio::spawn(future);
+//!
+//! // now you can log
+//!error!("An error occured");
+//!warn!("A warning");
+//!# }
+//!```
 #![deny(missing_docs)]
 #![deny(unsafe_code)]
 #![warn(missing_debug_implementations)]

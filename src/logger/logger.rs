@@ -35,6 +35,15 @@ impl DataDogLogger {
     /// What it means is that no executor is used to host DataDog network client. A new thread is started instead.
     /// It receives messages to log and sends them in batches in blocking fashion.
     /// As this is a separate thread, calling [`log`](Self::log) does not imply any IO operation, thus is quite fast.
+    ///
+    /// # Examples
+    ///```rust
+    ///use datadog_logs::{config::DataDogConfig, logger::DataDogLogger, client::HttpDataDogClient};
+    ///
+    ///let config = DataDogConfig::default();
+    ///let client = HttpDataDogClient::new(&config).unwrap();
+    ///let logger = DataDogLogger::blocking(client, config);
+    ///```
     pub fn blocking<T>(client: T, config: DataDogConfig) -> Self
     where
         T: DataDogClient + Send + 'static,
@@ -66,7 +75,6 @@ impl DataDogLogger {
     /// Creates new non-blocking `DataDogLogger` instance
     ///
     /// Internally spawns logger future to `tokio` runtime.
-    ///
     /// It is equivalent to calling [`non_blocking_cold`](Self::non_blocking_cold) and spawning future to Tokio runtime.
     /// Thus it is only a convinience function.
     #[cfg(feature = "with-tokio")]
@@ -86,6 +94,19 @@ impl DataDogLogger {
     ///
     /// It returns a `Future` that needs to be spawned for logger to work. This `Future` is a task that is responsible for sending messages.
     /// Although a little inconvinient, it is completely executor agnostic.
+    ///
+    /// # Examples
+    ///```rust
+    ///use datadog_logs::{config::DataDogConfig, logger::DataDogLogger, client::HttpDataDogClient};
+    ///
+    ///# async fn func() {
+    ///let config = DataDogConfig::default();
+    ///let client = HttpDataDogClient::new(&config).unwrap();
+    ///let (logger, future) = DataDogLogger::non_blocking_cold(client, config);
+    ///
+    ///tokio::spawn(future);
+    ///# }
+    ///```
     #[cfg(feature = "nonblocking")]
     pub fn non_blocking_cold<T>(
         client: T,
@@ -122,6 +143,18 @@ impl DataDogLogger {
     ///
     /// This function does not invoke any IO operation by itself. Instead it sends messages to logger thread or task using channels.
     /// Therefore it is quite lightweight.
+    ///
+    /// ## Examples
+    ///
+    ///```rust
+    ///use datadog_logs::{config::DataDogConfig, logger::{DataDogLogger, DataDogLogLevel}, client::HttpDataDogClient};
+    ///
+    ///let config = DataDogConfig::default();
+    ///let client = HttpDataDogClient::new(&config).unwrap();
+    ///let logger = DataDogLogger::blocking(client, config);
+    ///
+    ///logger.log("message", DataDogLogLevel::Error);
+    ///```
     pub fn log<T: Display>(&self, message: T, level: DataDogLogLevel) {
         let log = DataDogLog {
             message: message.to_string(),
@@ -147,6 +180,20 @@ impl DataDogLogger {
     }
 
     /// Initializes blocking DataDogLogger with `log` crate.
+    /// # Examples
+    ///
+    ///```rust
+    ///use datadog_logs::{config::DataDogConfig, logger::{DataDogLogger, DataDogLogLevel}, client::HttpDataDogClient};
+    ///use log::*;
+    ///
+    ///let config = DataDogConfig::default();
+    ///let client = HttpDataDogClient::new(&config).unwrap();
+    ///
+    ///DataDogLogger::set_blocking_logger(client, config, LevelFilter::Error);
+    ///
+    ///error!("An error occured");
+    ///warn!("A warning")
+    ///```
     pub fn set_blocking_logger<T>(
         client: T,
         config: DataDogConfig,
@@ -164,6 +211,22 @@ impl DataDogLogger {
     /// Initializes nonblocking DataDogLogger with `log` crate.
     ///
     /// To make logger work, returned future has to be spawned to executor.
+    /// # Examples
+    ///```rust
+    ///use datadog_logs::{config::DataDogConfig, logger::DataDogLogger, client::HttpDataDogClient};
+    ///use log::*;
+    ///
+    ///# async fn func() {
+    ///let config = DataDogConfig::default();
+    ///let client = HttpDataDogClient::new(&config).unwrap();
+    ///let future = DataDogLogger::set_nonblocking_logger(client, config, LevelFilter::Error).unwrap();
+    ///
+    ///tokio::spawn(future);
+    ///
+    ///error!("An error occured");
+    ///warn!("A warning");
+    ///# }
+    ///```
     #[cfg(feature = "nonblocking")]
     pub fn set_nonblocking_logger<T>(
         client: T,
