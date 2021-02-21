@@ -33,7 +33,7 @@ log = {version = "0.4", features = ["std"]}
 # optional
 async-trait = {version = "0.1.42", optional = true}
 futures = {version = "0.3.8", optional = true}
-reqwest = {version = "0.11.0", features = ["json"], optional = true}
+reqwest = {version = "0.11.1", default-features = false, features = ["json", "rustls-tls"], optional = true}
 tokio = {version = "0.3", features = ["rt"], optional = true}
 
 [dev-dependencies]

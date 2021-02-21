@@ -2,11 +2,9 @@ use super::blocking;
 #[cfg(feature = "nonblocking")]
 use super::nonblocking;
 use super::{level::DataDogLogLevel, log::DataDogLog};
-use crate::{
-    client::{AsyncDataDogClient, DataDogClient},
-    config::DataDogConfig,
-    error::DataDogLoggerError,
-};
+#[cfg(feature = "nonblocking")]
+use crate::client::AsyncDataDogClient;
+use crate::{client::DataDogClient, config::DataDogConfig, error::DataDogLoggerError};
 use flume::{bounded, unbounded, Receiver, Sender};
 #[cfg(feature = "nonblocking")]
 use futures::Future;

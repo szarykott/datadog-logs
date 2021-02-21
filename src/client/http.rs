@@ -1,8 +1,12 @@
-use super::{AsyncDataDogClient, DataDogClient};
+#[cfg(feature = "nonblocking")]
+use super::AsyncDataDogClient;
+use super::DataDogClient;
 use crate::config::DataDogConfig;
 use crate::error::DataDogLoggerError;
 use crate::logger::DataDogLog;
+#[cfg(feature = "nonblocking")]
 use async_trait::async_trait;
+#[cfg(feature = "nonblocking")]
 use reqwest;
 use url::Url;
 
@@ -46,6 +50,7 @@ impl DataDogClient for HttpDataDogClient {
     }
 }
 
+#[cfg(feature = "nonblocking")]
 #[async_trait]
 impl AsyncDataDogClient for HttpDataDogClient {
     async fn send_async(&mut self, messages: &[DataDogLog]) -> Result<(), DataDogLoggerError> {
