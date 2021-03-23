@@ -10,10 +10,7 @@ Logger consists of two parts - logging facade that sends messages to dedicated t
 
 Thanks to such a workflow logging should not affect throughput of your application, nor force you to handle errors arising from HTTP. 
 
-## Why
-
-Author found no existing library that could be used for this purpose.
-
 ## Feature flags
 
-* `log-integration` - enables integration with `log` crate (enabled by default)
+* `nonblocking` - enabled a nonblocking implementation of the logger based on Futures
+* `with-tokio` - adds convinience methods to bootstrap logger with tokio
